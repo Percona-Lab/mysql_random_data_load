@@ -94,7 +94,7 @@ CREATE TABLE `test`.`t3` (
   PRIMARY KEY (`id`)
 ) ENGINE=InnoDB;
 ```
-To generate 10K random rows, just run:
+To generate 100K random rows, just run:
 ```
 random-data-load test t3 100000 --max-threads=8 --user=root --password=root
 ```
