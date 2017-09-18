@@ -48,14 +48,19 @@ func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
 	address := *host
+	net := "unix"
+	if address != "localhost" {
+		net = "tcp"
+	}
 	if *port != 0 {
-		address += ":" + string(*port)
+		address = fmt.Sprintf("%s:%d", address, *port)
 	}
 
 	dsn := Config{
 		User:      *user,
 		Passwd:    *pass,
 		Addr:      address,
+		Net:       net,
 		DBName:    *dbName,
 		ParseTime: true,
 	}
