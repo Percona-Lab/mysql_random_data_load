@@ -6,8 +6,10 @@ import (
 	"log"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
+	"sync/atomic"
 	"time"
 
 	"github.com/Percona-Lab/random_data_load/internal/getters"
@@ -34,13 +36,13 @@ var (
 	rows       = app.Arg("rows", "Number of rows to insert").Required().Int()
 
 	validFunctions = []string{"int", "string", "date", "date_in_range"}
-	masks          = map[string]uint64{
+	masks          = map[string]int64{
 		"tinyint":   0XF,
 		"smallint":  0xFF,
-		"mediumint": 0xFFF,
-		"int":       0xFFFF,
-		"integer":   0xFFFF,
-		"bigint":    0xFFFFFFFF,
+		"mediumint": 0x7FFFF,
+		"int":       0x7FFFFFFF,
+		"integer":   0x7FFFFFFF,
+		"bigint":    0x7FFFFFFFFFFFFFFF,
 	}
 )
 
@@ -57,12 +59,13 @@ func main() {
 	}
 
 	dsn := Config{
-		User:      *user,
-		Passwd:    *pass,
-		Addr:      address,
-		Net:       net,
-		DBName:    *dbName,
-		ParseTime: true,
+		User:            *user,
+		Passwd:          *pass,
+		Addr:            address,
+		Net:             net,
+		DBName:          *dbName,
+		ParseTime:       true,
+		ClientFoundRows: true,
 	}
 
 	db, err := sql.Open("mysql", dsn.FormatDSN())
@@ -91,32 +94,62 @@ func main() {
 		fmt.Println(sql)
 	}
 
-	stmt, err := db.Prepare(sql)
-	if err != nil {
-		log.Printf("cannot prepare %q: %s", sql, err)
-		os.Exit(1)
-	}
-	defer stmt.Close()
-
+	var wg sync.WaitGroup
+	var okRowsCount int64
 	values := makeValueFuncs(table.Fields)
+	resultsChan := make(chan int)
+
 	rowsChan := makeRowsChan(*rows, values)
 
 	if *maxThreads < 1 {
 		*maxThreads = 1
 	}
-	var wg sync.WaitGroup
 
 	log.Println("Starting")
 
+	bar := uiprogress.AddBar(*rows).AppendCompleted()
 	uiprogress.Start()
-	bar := uiprogress.AddBar(*rows).PrependElapsed().AppendCompleted()
 
-	fields, placeholders := getFieldsAndPlaceholders(table.Fields)
+	// This go-routine keeps track of how many rows were actually inserted
+	// by the bulk inserts since one or more rows could generate duplicated
+	// keys so, not allways the number of inserted rows = number of rows in
+	// the bulk insert
+	go func() {
+		for okCount := range resultsChan {
+			bar.Set(bar.Current() + okCount)
+			atomic.AddInt64(&okRowsCount, int64(okCount))
+		}
+	}()
+
 	for i := 0; i < *maxThreads; i++ {
 		wg.Add(1)
-		go runInsert(*dbName, *tableName, *bulkSize, fields, placeholders, db, rowsChan, bar, &wg)
+		go runInsert(db, table, *bulkSize, rowsChan, resultsChan, &wg)
 	}
 	wg.Wait()
+
+	// Let the counter go-rutine to run for the last time
+	runtime.Gosched()
+	close(resultsChan)
+
+	if okRowsCount != int64(*rows) {
+		loadExtraRows(db, table, int64(*rows)-okRowsCount, values)
+		bar.Set(*rows)
+	}
+}
+
+func loadExtraRows(db *sql.DB, table *tableparser.Table, rows int64, values []getters.Getter) {
+	var okCount int64
+	for okCount < rows {
+		vals := make([]interface{}, len(values))
+		for j, val := range values {
+			vals[j] = val.Value()
+		}
+
+		if err := runOneInsert(db, table, vals); err != nil {
+			continue
+		}
+		okCount++
+	}
 }
 
 func makeRowsChan(rows int, values []getters.Getter) chan []interface{} {
@@ -124,65 +157,75 @@ func makeRowsChan(rows int, values []getters.Getter) chan []interface{} {
 	if rows < preloadCount {
 		preloadCount = rows
 	}
+
 	rowsChan := make(chan []interface{}, preloadCount)
 	go func() {
-		vals := make([]interface{}, len(values))
 		for i := 0; i < rows; i++ {
-			for i, val := range values {
-				vals[i] = val.Value()
+			vals := make([]interface{}, len(values))
+			for j, val := range values {
+				vals[j] = val.Value()
 			}
 			rowsChan <- vals
 		}
 		close(rowsChan)
 	}()
-
 	return rowsChan
 }
 
-func runInsert(dbName string, tableName string, bulkSize int, fieldNames []string,
-	placeholders []string, db *sql.DB, valsChan chan []interface{},
-	bar *uiprogress.Bar, wg *sync.WaitGroup) {
-	baseSQL := fmt.Sprintf("INSERT INTO %s.%s (%s) VALUES ",
-		backticks(dbName),
-		backticks(tableName),
-		strings.Join(fieldNames, ","),
+func runInsert(db *sql.DB, table *tableparser.Table, bulkSize int, valsChan chan []interface{},
+	resultsChan chan int, wg *sync.WaitGroup) {
+	//
+	fields, placeholders := getFieldsAndPlaceholders(table.Fields)
+	baseSQL := fmt.Sprintf("INSERT IGNORE INTO %s (%s) VALUES ",
+		backticks(table.Name),
+		strings.Join(fields, ","),
 	)
 	separator := ""
 	sql := baseSQL
-	bulkVals := make([]interface{}, 0, len(fieldNames))
-	count := 0
+	bulkVals := []interface{}{}
+	var count int
 
 	for vals := range valsChan {
 		sql += separator + "(" + strings.Join(placeholders, ",") + ")"
 		separator = ", "
-		bar.Incr()
 		bulkVals = append(bulkVals, vals...)
 		count++
 		if count < bulkSize {
 			continue
 		}
-		_, err := db.Exec(sql, bulkVals...)
-		if err != nil {
-			log.Printf("Error inserting values: %s\n", err)
-		}
+		result, _ := db.Exec(sql, bulkVals...)
+		rowsAffected, _ := result.RowsAffected()
+		resultsChan <- int(rowsAffected)
 		separator = ""
 		sql = baseSQL
-		bulkVals = nil
+		bulkVals = []interface{}{}
 		count = 0
 	}
-	if count > 0 {
-		_, err := db.Exec(sql, bulkVals...)
-		if err != nil {
-			log.Printf("Error inserting values: %s\n", err)
-		}
+	if count > 0 && len(bulkVals) > 0 {
+		result, _ := db.Exec(sql, bulkVals...)
+		rowsAffected, _ := result.RowsAffected()
+		resultsChan <- int(rowsAffected)
 	}
 	wg.Done()
+}
+
+func runOneInsert(db *sql.DB, table *tableparser.Table, vals []interface{}) error {
+	fields, placeholders := getFieldsAndPlaceholders(table.Fields)
+	query := fmt.Sprintf("INSERT INTO %s (%s) VALUES (%s)",
+		backticks(table.Name),
+		strings.Join(fields, ","),
+		strings.Join(placeholders, ","),
+	)
+	if _, err := db.Exec(query, vals...); err != nil {
+		return err
+	}
+	return nil
 }
 
 func makeValueFuncs(fields []tableparser.Field) []getters.Getter {
 	var values []getters.Getter
 	for _, field := range fields {
-		if !field.AllowsNull && !field.Default.Valid && field.Key == "PRI" &&
+		if !field.AllowsNull && field.Key == "PRI" &&
 			strings.Contains(field.Extra, "auto_increment") {
 			continue
 		}
@@ -225,7 +268,7 @@ func getFieldsAndPlaceholders(fields []tableparser.Field) ([]string, []string) {
 			continue
 		}
 		fieldNames = append(fieldNames, backticks(field.Name))
-		if !field.AllowsNull && !field.Default.Valid && field.Key == "PRI" &&
+		if !field.AllowsNull && field.Key == "PRI" &&
 			strings.Contains(field.Extra, "auto_increment") {
 			placeHolders = append(placeHolders, "NULL")
 		} else {

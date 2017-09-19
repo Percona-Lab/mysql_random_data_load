@@ -19,16 +19,16 @@ type Getter interface {
 }
 
 type RandomInt struct {
-	mask      uint64
+	mask      int64
 	allowNull bool
 }
 
 func (r *RandomInt) Value() interface{} {
 	rand.Seed(time.Now().UnixNano())
-	return uint64(rand.Int63n(10e8)) & r.mask
+	return rand.Int63n(r.mask)
 }
 
-func NewRandomInt(mask uint64, allowNull bool) Getter {
+func NewRandomInt(mask int64, allowNull bool) Getter {
 	return &RandomInt{mask, allowNull}
 }
 
@@ -39,7 +39,6 @@ type RandomIntRange struct {
 }
 
 func (r *RandomIntRange) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
 	limit := r.max - r.min + 1
 	return r.min + rand.Int63n(limit)
 }
@@ -54,7 +53,6 @@ type RandomDecimal struct {
 }
 
 func (r *RandomDecimal) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
 	f := rand.Float64() * float64(rand.Int63n(int64(math.Pow10(int(r.size)))))
 	format := fmt.Sprintf("%%%0.1ff", r.size)
 	return fmt.Sprintf(format, f)
@@ -73,7 +71,6 @@ type RandomString struct {
 }
 
 func (r *RandomString) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
 	if r.allowNull && rand.Int63n(100) < nilFrequency {
 		return nil
 	}

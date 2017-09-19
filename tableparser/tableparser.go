@@ -11,6 +11,7 @@ import (
 )
 
 type Table struct {
+	Name    string
 	Fields  []Field
 	Indexes []Index
 }
@@ -32,7 +33,9 @@ type Field struct {
 }
 
 func Parse(db *sql.DB, tableName string) (*Table, error) {
-	table := &Table{}
+	table := &Table{
+		Name: tableName,
+	}
 	var err error
 	table.Fields, err = parseTable(db, tableName)
 	if err != nil {
