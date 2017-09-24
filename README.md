@@ -50,12 +50,32 @@ The program can detect if a field accepts NULLs and if it does, it will generate
 ## Options
 |Option|Description|
 |------|-----------|
-|--host|Host name/ip|
-|--port|Port number|
-|--user|Username|
-|--password|Password|
 |--bulk-size|Number of rows per INSERT statement (Default: 1000)|
 |--debug|Show some debug information|
+|--fk-samples-factor|Percentage used to get random samples for foreign keys fields. Default 0.3|
+|--host|Host name/ip|
+|--max-fk-samples|Maximum number of samples for fields having foreign keys constarints. Default: 100|
+|--max-retries|Maximum number of rows to retry in case of errors. See duplicated keys. Deafult: 100|
+|--password|Password|
+|--port|Port number|
+|--show-progressbar|Show the progress bar. Default: true|
+|--user|Username|
+
+## Foreign keys support
+If a field has Foreign Keys constraints, `random-data-load` will get up to `--max-fk-samples` random samples from the referenced tables in order to insert valid values for the field.  
+The number of samples to get follows this rules:  
+**1.** Get the aproximate number of rows in the referenced table using the `rows` field in:  
+```
+EXPLAIN COUNT(*) FROM <referenced schema>.<referenced table>
+```
+**1.1** If the number of rows is less than `max-fk-samples`, all rows are retrieved from the referenced table using this query: 
+```
+SELECT <referenced field> FROM <referenced schema>.<referenced table>
+```
+**1.2** If the number of rows is greater than `max-fk-samples`, samples are retrieved from the referenced table using this query:  
+```
+SELECT <referenced field> FROM <referenced schema>.<referenced table> WHERE RAND() <= <fk-samples-factor> LIMIT <max-fk-samples>
+```
 
 ### Example
 ```
@@ -135,6 +155,19 @@ tcol28: 6.12
 
 ## To do
 - [ ] Add suport for all data types.
-- [ ] Add supporrt for foreign keys.
+- [X] Add supporrt for foreign keys.
 - [ ] Support config files to override default values/ranges.
 - [ ] Support custom functions via LUA plugins.
+
+## Versions history
+
+#### 0.1.2
+- New table parser able to retrieve all the information for fields, indexes and foreign keys constraints.
+- Support for foreign keys constraints
+- Added some tests
+
+#### 0.1.1
+- Fixed random data generation
+
+#### 0.1.0
+- Initial version

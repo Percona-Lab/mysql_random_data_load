@@ -11,7 +11,6 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Percona-Lab/random_data_load/internal/dbutils"
 	"github.com/Percona-Lab/random_data_load/internal/getters"
 	"github.com/Percona-Lab/random_data_load/tableparser"
 	"github.com/gosuri/uiprogress"
@@ -30,14 +29,11 @@ var (
 	maxThreads = app.Flag("max-threads", "Maximum number of threads to run inserts").Default("1").Int()
 	debug      = app.Flag("debug", "Log debugging information").Bool()
 	bulkSize   = app.Flag("bulk-size", "Number of rows per insert statement").Default("1000").Int()
-	maxRetries = app.Flag("max-retries", "Number of rows to insert").Default("100").Int64()
-	progress   = app.Flag("show-progressbar", "Show progress bar").Default("true").Bool()
-	samples    = app.Flag("max-fk-samples", "Maximum number of samples for foreign keys fields").Default("100").Int64()
-	factor     = app.Flag("fk-samples-factor", "Percentage used to get random samples for foreign keys fields").Default("0.3").Float64()
-	//
-	schema    = app.Arg("database", "Database").Required().String()
-	tableName = app.Arg("table", "Table").Required().String()
-	rows      = app.Arg("rows", "Number of rows to insert").Required().Int()
+	schema     = app.Arg("database", "Database").Required().String()
+	tableName  = app.Arg("table", "Table").Required().String()
+	rows       = app.Arg("rows", "Number of rows to insert").Required().Int()
+	maxRetries = app.Arg("max-retries", "Number of rows to insert").Default("10000").Int64()
+	progress   = app.Arg("show-progressbar", "Show progress bar").Default("true").Bool()
 
 	validFunctions = []string{"int", "string", "date", "date_in_range"}
 	maxValues      = map[string]int64{
@@ -277,7 +273,7 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			samples, err := getSamples(conn, field.Constraint.ReferencedTableSchema,
 				field.Constraint.ReferencedTableName,
 				field.Constraint.ReferencedColumnName,
-				*samples, *factor, field.DataType)
+				100, field.DataType)
 			if err != nil {
 				log.Printf("cannot get samples for field %q: %s\n", field.ColumnName, err)
 				continue
@@ -335,20 +331,20 @@ func getFieldNames(fields []tableparser.Field) []string {
 	return fieldNames
 }
 
-func getSamples(conn *sql.DB, schema, table, field string, samples int64, factor float64, dataType string) ([]interface{}, error) {
+func getSamples(conn *sql.DB, schema, table, field string, samples int64, dataType string) ([]interface{}, error) {
 	var count int64
 	var query string
 
-	count, err := dbutils.GetApproxRowsCount(conn, schema, table)
-	if err != nil {
+	queryCount := fmt.Sprintf("SELECT COUNT(*) FROM `%s`.`%s`", schema, table)
+	if err := conn.QueryRow(queryCount).Scan(&count); err != nil {
 		return nil, fmt.Errorf("cannot get count for table %q: %s", table, err)
 	}
 
 	if count < samples {
 		query = fmt.Sprintf("SELECT `%s` FROM `%s`.`%s`", field, schema, table)
 	} else {
-		query = fmt.Sprintf("SELECT `%s` FROM `%s`.`%s` WHERE RAND() <= %f LIMIT %d",
-			field, schema, table, factor, samples)
+		query = fmt.Sprintf("SELECT `%s` FROM `%s`.`%s` WHERE RAND() <= .3 LIMIT %d",
+			field, schema, table, samples)
 	}
 
 	rows, err := conn.Query(query)
