@@ -11,28 +11,34 @@ import (
 
 const (
 	nilFrequency = 10
-	oneYear      = 60 * 60 * 24 * 365 * time.Second
+	oneYear      = int64(60 * 60 * 24 * 365)
 )
 
 type Getter interface {
 	Value() interface{}
+	String() string
 }
 
 type RandomInt struct {
+	name      string
 	mask      int64
 	allowNull bool
 }
 
 func (r *RandomInt) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
 	return rand.Int63n(r.mask)
 }
 
-func NewRandomInt(mask int64, allowNull bool) Getter {
-	return &RandomInt{mask, allowNull}
+func (r *RandomInt) String() string {
+	return fmt.Sprintf("%d", r.Value())
+}
+
+func NewRandomInt(name string, mask int64, allowNull bool) Getter {
+	return &RandomInt{name, mask, allowNull}
 }
 
 type RandomIntRange struct {
+	name      string
 	min       int64
 	max       int64
 	allowNull bool
@@ -43,30 +49,37 @@ func (r *RandomIntRange) Value() interface{} {
 	return r.min + rand.Int63n(limit)
 }
 
-func NewRandomIntRange(min, max int64, allowNull bool) Getter {
-	return &RandomIntRange{min, max, allowNull}
+func (r *RandomIntRange) String() string {
+	return fmt.Sprintf("%d", r.Value())
+}
+
+func NewRandomIntRange(name string, min, max int64, allowNull bool) Getter {
+	return &RandomIntRange{name, min, max, allowNull}
 }
 
 type RandomDecimal struct {
-	size      float64
+	name      string
+	size      int64
 	allowNull bool
 }
 
 func (r *RandomDecimal) Value() interface{} {
 	f := rand.Float64() * float64(rand.Int63n(int64(math.Pow10(int(r.size)))))
-	format := fmt.Sprintf("%%%0.1ff", r.size)
-	return fmt.Sprintf(format, f)
+	return f
 }
 
-func NewRandomDecimal(size float64, allowNull bool) Getter {
-	if size == 0 {
-		size = 5.2
-	}
-	return &RandomDecimal{size, allowNull}
+func (r *RandomDecimal) String() string {
+	return fmt.Sprintf("%0f", r.Value())
 }
 
+func NewRandomDecimal(name string, size int64, allowNull bool) Getter {
+	return &RandomDecimal{name, size, allowNull}
+}
+
+// RandomString getter
 type RandomString struct {
-	maxSize   float64
+	name      string
+	maxSize   int64
 	allowNull bool
 }
 
@@ -93,41 +106,63 @@ func (r *RandomString) Value() interface{} {
 	return s
 }
 
-func NewRandomString(maxSize float64, allowNull bool) Getter {
-	return &RandomString{maxSize, allowNull}
+func (r *RandomString) String() string {
+	return fmt.Sprintf("%q", r.Value())
+}
+
+func NewRandomString(name string, maxSize int64, allowNull bool) Getter {
+	return &RandomString{name, maxSize, allowNull}
 }
 
 type RandomDate struct {
+	name      string
 	allowNull bool
 }
 
 func (r *RandomDate) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
-	d := time.Now().Add(time.Duration(-1*int64(uint64(rand.Int63n(int64(oneYear))))) * time.Second)
-	return d.Format("2006-01-02 15:03:04")
+	var randomSeconds time.Duration
+	for i := 0; i < 10 && randomSeconds != 0; i++ {
+		randomSeconds = time.Duration(rand.Int63n(int64(oneYear)) + rand.Int63n(100))
+	}
+	d := time.Now().Add(-1 * randomSeconds)
+	return d
 }
 
-func NewRandomDate(allowNull bool) Getter {
-	return &RandomDate{allowNull}
+func (r *RandomDate) String() string {
+	d := r.Value().(time.Time)
+	return fmt.Sprintf("'%s'", d.Format("2006-01-02 15:03:04"))
+}
+
+func NewRandomDate(name string, allowNull bool) Getter {
+	return &RandomDate{name, allowNull}
 }
 
 type RandomDateInRange struct {
+	name      string
 	min       string
 	max       string
 	allowNull bool
 }
 
 func (r *RandomDateInRange) Value() interface{} {
-	d := time.Now().Add(time.Duration(-1*rand.Int63n(int64(oneYear.Seconds()))) * time.Second)
-	return d.Format("2006-01-02 15:03:04")
+	rand.Seed(time.Now().UnixNano())
+	var randomSeconds int64
+	randomSeconds = rand.Int63n(oneYear) + rand.Int63n(100)
+	d := time.Now().Add(-1 * time.Duration(randomSeconds) * time.Second)
+	return d
 }
 
-func NewRandomDateInRange(min, max string, allowNull bool) Getter {
+func (r *RandomDateInRange) String() string {
+	d := r.Value().(time.Time)
+	return fmt.Sprintf("'%s'", d.Format("2006-01-02 15:03:04"))
+}
+
+func NewRandomDateInRange(name string, min, max string, allowNull bool) Getter {
 	if min == "" {
-		t := time.Now().Add(-1 * oneYear)
+		t := time.Now().Add(-1 * time.Duration(oneYear) * time.Second)
 		min = t.Format("2006-01-02")
 	}
-	return &RandomDateInRange{min, max, allowNull}
+	return &RandomDateInRange{name, min, max, allowNull}
 }
 
 type RandomDateTimeInRange struct {
@@ -137,20 +172,27 @@ type RandomDateTimeInRange struct {
 }
 
 func (r *RandomDateTimeInRange) Value() interface{} {
-	d := time.Now().Add(time.Duration(-1*rand.Int63n(int64(oneYear.Seconds()))) * time.Second)
-	return d.Format("2006-01-02 15:03:04")
+	rand.Seed(time.Now().UnixNano())
+	randomSeconds := rand.Int63n(oneYear)
+	d := time.Now().Add(-1 * time.Duration(randomSeconds) * time.Second)
+	return d
 }
 
-func NewRandomDateTimeInRange(min, max string, allowNull bool) Getter {
+func (r *RandomDateTimeInRange) String() string {
+	d := r.Value().(time.Time)
+	return fmt.Sprintf("'%s'", d.Format("2006-01-02 15:03:04"))
+}
+
+func NewRandomDateTimeInRange(name string, min, max string, allowNull bool) Getter {
 	if min == "" {
-		t := time.Now().Add(-1 * oneYear)
+		t := time.Now().Add(-1 * time.Duration(oneYear) * time.Second)
 		min = t.Format("2006-01-02")
 	}
-	return &RandomDateInRange{min, max, allowNull}
+	return &RandomDateInRange{name, min, max, allowNull}
 }
 
-func NewRandomDateTime(allowNull bool) Getter {
-	return &RandomDateInRange{"", "", allowNull}
+func NewRandomDateTime(name string, allowNull bool) Getter {
+	return &RandomDateInRange{name, "", "", allowNull}
 }
 
 // RandomTime Getter
@@ -159,11 +201,14 @@ type RandomTime struct {
 }
 
 func (r *RandomTime) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
 	h := rand.Int63n(24)
 	m := rand.Int63n(60)
 	s := rand.Int63n(60)
 	return fmt.Sprintf("%02d:%02d:%02d", h, m, s)
+}
+
+func (r *RandomTime) String() string {
+	return r.Value().(string)
 }
 
 func NewRandomTime(allowNull bool) Getter {
@@ -177,7 +222,7 @@ type RandomEnum struct {
 }
 
 func (r *RandomEnum) Value() interface{} {
-	rand.Seed(time.Now().UnixNano())
+	//rand.Seed(time.Now().UnixNano())
 	if r.allowNull && rand.Int63n(100) < nilFrequency {
 		return nil
 	}
@@ -185,18 +230,55 @@ func (r *RandomEnum) Value() interface{} {
 	return r.allowedValues[i]
 }
 
+func (r *RandomEnum) String() string {
+	return fmt.Sprintf("%q", r.Value())
+}
+
 func NewRandomEnum(allowedValues []string, allowNull bool) Getter {
 	return &RandomEnum{allowedValues, allowNull}
 }
 
+type RandomSample struct {
+	name      string
+	samples   []interface{}
+	allowNull bool
+}
+
+func (r *RandomSample) Value() interface{} {
+	if r.allowNull && rand.Int63n(100) < nilFrequency {
+		return nil
+	}
+	pos := rand.Int63n(int64(len(r.samples)))
+	return r.samples[pos]
+}
+
+func (r *RandomSample) String() string {
+	switch r.Value().(type) {
+	case string:
+		return fmt.Sprintf("%q", r.Value())
+	default:
+		return fmt.Sprintf("%v", r.Value())
+	}
+}
+
+func NewRandomSample(name string, samples []interface{}, allowNull bool) *RandomSample {
+	r := &RandomSample{name, samples, allowNull}
+	return r
+}
+
 // Constant Getter. Used for debugging
 type Constant struct {
+	value interface{}
 }
 
 func (r *Constant) Value() interface{} {
-	return "constant"
+	return r.value
 }
 
-func NewConstant() Getter {
-	return &Constant{}
+func (r *Constant) String() string {
+	return fmt.Sprintf("%q", r.Value())
+}
+
+func NewConstant(value interface{}) Getter {
+	return &Constant{value}
 }
