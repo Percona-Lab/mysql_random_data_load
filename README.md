@@ -161,6 +161,9 @@ tcol28: 6.12
 
 ## Versions history
 
+#### 0.1.3
+- Fixed handling of nulls
+
 #### 0.1.2
 - New table parser able to retrieve all the information for fields, indexes and foreign keys constraints.
 - Support for foreign keys constraints
