@@ -107,7 +107,11 @@ func (r *RandomString) Value() interface{} {
 }
 
 func (r *RandomString) String() string {
-	return fmt.Sprintf("%q", r.Value())
+	v := r.Value()
+	if v == nil {
+		return "NULL"
+	}
+	return fmt.Sprintf("%q", v)
 }
 
 func NewRandomString(name string, maxSize int64, allowNull bool) Getter {
@@ -231,7 +235,10 @@ func (r *RandomEnum) Value() interface{} {
 }
 
 func (r *RandomEnum) String() string {
-	return fmt.Sprintf("%q", r.Value())
+	if v := r.Value(); v != nil {
+		return fmt.Sprintf("%q", v)
+	}
+	return "NULL"
 }
 
 func NewRandomEnum(allowedValues []string, allowNull bool) Getter {
@@ -253,11 +260,15 @@ func (r *RandomSample) Value() interface{} {
 }
 
 func (r *RandomSample) String() string {
-	switch r.Value().(type) {
+	v := r.Value()
+	if v == nil {
+		return "NULL"
+	}
+	switch v.(type) {
 	case string:
-		return fmt.Sprintf("%q", r.Value())
+		return fmt.Sprintf("%q", v)
 	default:
-		return fmt.Sprintf("%v", r.Value())
+		return fmt.Sprintf("%v", v)
 	}
 }
 
