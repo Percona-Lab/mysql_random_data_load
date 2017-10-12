@@ -1,0 +1,62 @@
+[
+  {
+    "NonUnique": false,
+    "KeyName": "PRIMARY",
+    "SeqInIndex": 1,
+    "ColumnName": "actor_id",
+    "Collation": "A",
+    "Cardinality": 200,
+    "SubPart": {
+      "Int64": 0,
+      "Valid": false
+    },
+    "Packed": {
+      "String": "",
+      "Valid": false
+    },
+    "Null": "",
+    "IndexType": "BTREE",
+    "Comment": "",
+    "IndexComment": ""
+  },
+  {
+    "NonUnique": false,
+    "KeyName": "PRIMARY",
+    "SeqInIndex": 2,
+    "ColumnName": "film_id",
+    "Collation": "A",
+    "Cardinality": 5462,
+    "SubPart": {
+      "Int64": 0,
+      "Valid": false
+    },
+    "Packed": {
+      "String": "",
+      "Valid": false
+    },
+    "Null": "",
+    "IndexType": "BTREE",
+    "Comment": "",
+    "IndexComment": ""
+  },
+  {
+    "NonUnique": true,
+    "KeyName": "idx_fk_film_id",
+    "SeqInIndex": 1,
+    "ColumnName": "film_id",
+    "Collation": "A",
+    "Cardinality": 997,
+    "SubPart": {
+      "Int64": 0,
+      "Valid": false
+    },
+    "Packed": {
+      "String": "",
+      "Valid": false
+    },
+    "Null": "",
+    "IndexType": "BTREE",
+    "Comment": "",
+    "IndexComment": ""
+  }
+]
