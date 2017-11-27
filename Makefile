@@ -1,10 +1,11 @@
 GO := go
 pkgs   = $(shell basename `git rev-parse --show-toplevel`)
-VERSION=$(shell git describe --abbrev=0)
-BUILD=$(shell date +%FT%T%z)
-GOVERSION=$(shell go version | cut --delimiter=" " -f3)
-COMMIT=$(shell git rev-parse HEAD)
-BRANCH=$(shell git rev-parse --abbrev-ref HEAD)
+VERSION ?=$(shell git describe --abbrev=0)
+BUILD ?=$(shell date +%FT%T%z)
+GOVERSION ?=$(shell go version | cut --delimiter=" " -f3)
+COMMIT ?=$(shell git rev-parse HEAD)
+SOMEVAR ?=$(shell git rev-parse HEAD)
+BRANCH ?=$(shell git rev-parse --abbrev-ref HEAD)
 
 PREFIX=$(shell pwd)
 TOP_DIR=$(shell git rev-parse --show-toplevel)

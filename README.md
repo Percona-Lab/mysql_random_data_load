@@ -161,6 +161,10 @@ tcol28: 6.12
 
 ## Versions history
 
+#### 0.1.4
+- Fixed handling of time columns
+- Improved support of GENERATED columns
+
 #### 0.1.3
 - Fixed handling of nulls
 
