@@ -13,7 +13,7 @@ type Table struct {
 	Schema      string
 	Name        string
 	Fields      []Field
-	Indexes     []Index
+	Indexes     map[string]Index
 	Constraints []Constraint
 	Triggers    []Trigger
 	//
@@ -21,6 +21,12 @@ type Table struct {
 }
 
 type Index struct {
+	Name   string
+	Unique bool
+	Fields []string
+}
+
+type IndexField struct {
 	NonUnique    bool
 	KeyName      string
 	SeqInIndex   int
@@ -119,28 +125,7 @@ func (t *Table) parse() error {
 	//                           |          |       +-------- extra info (unsigned, etc)
 	//                           |          |       |
 	re := regexp.MustCompile("^(.*?)(?:\\((.*?)\\)(.*))?$")
-	query := "SELECT `TABLE_CATALOG`," +
-		"`TABLE_SCHEMA`," +
-		"`TABLE_NAME`," +
-		"`COLUMN_NAME`," +
-		"`ORDINAL_POSITION`," +
-		"`COLUMN_DEFAULT`," +
-		"`IS_NULLABLE`," +
-		"`DATA_TYPE`," +
-		"`CHARACTER_MAXIMUM_LENGTH`," +
-		"`CHARACTER_OCTET_LENGTH`," +
-		"`NUMERIC_PRECISION`," +
-		"`NUMERIC_SCALE`," +
-		"`DATETIME_PRECISION`," +
-		"`CHARACTER_SET_NAME`," +
-		"`COLLATION_NAME`," +
-		"`COLUMN_TYPE`," +
-		"`COLUMN_KEY`," +
-		"`EXTRA`," +
-		"`PRIVILEGES`," +
-		"`COLUMN_COMMENT`," +
-		"`GENERATION_EXPRESSION`" +
-		" FROM `information_schema`.`COLUMNS`" +
+	query := "SELECT * FROM `information_schema`.`COLUMNS`" +
 		fmt.Sprintf(" WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s'", t.Schema, t.Name)
 
 	constraints := constraintsAsMap(t.Constraints)
@@ -154,7 +139,8 @@ func (t *Table) parse() error {
 	for rows.Next() {
 		var f Field
 		var allowNull string
-		err := rows.Scan(&f.TableCatalog,
+		fields := []interface{}{
+			&f.TableCatalog,
 			&f.TableSchema,
 			&f.TableName,
 			&f.ColumnName,
@@ -174,10 +160,13 @@ func (t *Table) parse() error {
 			&f.Extra,
 			&f.Privileges,
 			&f.ColumnComment,
-			&f.GenerationExpression,
-		)
+		}
+
+		if cols, err := rows.Columns(); err == nil && len(cols) > 20 { //&& cols[20] == "GENERATION_EXPRESSION" {
+			fields = append(fields, &f.GenerationExpression)
+		}
+		err := rows.Scan(fields...)
 		if err != nil {
-			fmt.Println(err)
 			continue
 		}
 
@@ -207,7 +196,15 @@ func (t *Table) parse() error {
 	return nil
 }
 
-func getIndexes(db *sql.DB, schema, tableName string) ([]Index, error) {
+func (t *Table) FieldNames() []string {
+	fields := []string{}
+	for _, field := range t.Fields {
+		fields = append(fields, field.ColumnName)
+	}
+	return fields
+}
+
+func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) {
 	query := fmt.Sprintf("SHOW INDEXES FROM `%s`.`%s`", schema, tableName)
 	rows, err := db.Query(query)
 	if err != nil {
@@ -215,10 +212,10 @@ func getIndexes(db *sql.DB, schema, tableName string) ([]Index, error) {
 	}
 	defer rows.Close()
 
-	indexes := []Index{}
+	indexes := make(map[string]Index)
 
 	for rows.Next() {
-		var i Index
+		var i IndexField
 		var table string
 		err := rows.Scan(&table, &i.NonUnique, &i.KeyName, &i.SeqInIndex,
 			&i.ColumnName, &i.Collation, &i.Cardinality, &i.SubPart,
@@ -226,7 +223,17 @@ func getIndexes(db *sql.DB, schema, tableName string) ([]Index, error) {
 		if err != nil {
 			return nil, fmt.Errorf("cannot read constraints: %s", err)
 		}
-		indexes = append(indexes, i)
+		if index, ok := indexes[i.KeyName]; !ok {
+			indexes[i.KeyName] = Index{
+				Name:   i.KeyName,
+				Unique: !i.NonUnique,
+				Fields: []string{i.ColumnName},
+			}
+
+		} else {
+			index.Fields = append(index.Fields, i.ColumnName)
+			index.Unique = index.Unique || !i.NonUnique
+		}
 	}
 
 	return indexes, nil

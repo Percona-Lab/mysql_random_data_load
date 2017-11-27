@@ -273,6 +273,11 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			strings.Contains(field.Extra, "auto_increment") {
 			continue
 		}
+
+		if field.GenerationExpression != "" {
+			continue
+		}
+
 		if field.Constraint != nil {
 			samples, err := getSamples(conn, field.Constraint.ReferencedTableSchema,
 				field.Constraint.ReferencedTableName,
@@ -285,6 +290,7 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			values = append(values, getters.NewRandomSample(field.ColumnName, samples, field.IsNullable))
 			continue
 		}
+
 		maxValue := maxValues["bigint"]
 		if m, ok := maxValues[field.DataType]; ok {
 			maxValue = m
@@ -326,10 +332,16 @@ func getFieldNames(fields []tableparser.Field) []string {
 		if !isSupportedType(field.DataType) {
 			continue
 		}
+
 		if !field.IsNullable && field.ColumnKey == "PRI" &&
 			strings.Contains(field.Extra, "auto_increment") {
 			continue
 		}
+
+		if field.GenerationExpression != "" {
+			continue
+		}
+
 		fieldNames = append(fieldNames, backticks(field.ColumnName))
 	}
 	return fieldNames
