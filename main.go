@@ -34,10 +34,11 @@ var (
 	progress   = app.Flag("show-progressbar", "Show progress bar").Default("true").Bool()
 	samples    = app.Flag("max-fk-samples", "Maximum number of samples for foreign keys fields").Default("100").Int64()
 	factor     = app.Flag("fk-samples-factor", "Percentage used to get random samples for foreign keys fields").Default("0.3").Float64()
+	version    = app.Flag("version", "Show version and exit").Bool()
 	//
-	schema    = app.Arg("database", "Database").Required().String()
-	tableName = app.Arg("table", "Table").Required().String()
-	rows      = app.Arg("rows", "Number of rows to insert").Required().Int()
+	schema    = app.Arg("database", "Database").String()
+	tableName = app.Arg("table", "Table").String()
+	rows      = app.Arg("rows", "Number of rows to insert").Int()
 
 	validFunctions = []string{"int", "string", "date", "date_in_range"}
 	maxValues      = map[string]int64{
@@ -51,6 +52,12 @@ var (
 		"double":    0x7FFFFFFF,
 		"bigint":    0x7FFFFFFFFFFFFFFF,
 	}
+
+	Version   = "0.0.0."
+	Commit    = "<sha1>"
+	Branch    = "branch-name"
+	Build     = "2017-01-01"
+	GoVersion = "1.9.2"
 )
 
 type insertValues []getters.Getter
@@ -65,6 +72,15 @@ func (g insertValues) String() string {
 
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
+
+	if *version {
+		fmt.Printf("Version   : %s\n", Version)
+		fmt.Printf("Commit    : %s\n", Commit)
+		fmt.Printf("Branch    : %s\n", Branch)
+		fmt.Printf("Build     : %s\n", Build)
+		fmt.Printf("Go version: %s\n", GoVersion)
+		return
+	}
 
 	address := *host
 	net := "unix"

@@ -31,11 +31,19 @@
 
 [[constraint]]
   branch = "master"
+  name = "github.com/hashicorp/go-version"
+
+[[constraint]]
+  branch = "master"
   name = "github.com/icrowley/fake"
 
 [[constraint]]
   branch = "master"
   name = "github.com/kr/pretty"
+
+[[constraint]]
+  name = "github.com/pkg/errors"
+  version = "0.8.0"
 
 [[constraint]]
   name = "gopkg.in/alecthomas/kingpin.v2"

@@ -39,6 +39,12 @@
 
 [[projects]]
   branch = "master"
+  name = "github.com/hashicorp/go-version"
+  packages = ["."]
+  revision = "fc61389e27c71d120f87031ca8c88a3428f372dd"
+
+[[projects]]
+  branch = "master"
   name = "github.com/icrowley/fake"
   packages = ["."]
   revision = "e64cc2cf92049a299f359734c6ea76073f2a8b2c"
@@ -58,14 +64,20 @@
 [[projects]]
   name = "github.com/mattn/go-isatty"
   packages = ["."]
-  revision = "fc9e8d8ef48496124e79ae0df75490096eccf6fe"
-  version = "v0.0.2"
+  revision = "0360b2af4f38e8d38c7fce2a9f4e702702d73a39"
+  version = "v0.0.3"
+
+[[projects]]
+  name = "github.com/pkg/errors"
+  packages = ["."]
+  revision = "645ef00459ed84a119197bfb8d8205042c6df63d"
+  version = "v0.8.0"
 
 [[projects]]
   branch = "master"
   name = "golang.org/x/sys"
   packages = ["unix"]
-  revision = "429f518978ab01db8bb6f44b66785088e7fba58b"
+  revision = "4ff8c001ce4cc464e644b922325097228fce14d8"
 
 [[projects]]
   name = "gopkg.in/alecthomas/kingpin.v2"
@@ -76,6 +88,6 @@
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  inputs-digest = "d645838ba798f7970eaf76c79564d3f61471897704f70d252233151f3f3f1f58"
+  inputs-digest = "30675f913c9b84e5dee77da604a31e520958e00dc150b871961f2e333f416db9"
   solver-name = "gps-cdcl"
   solver-version = 1
