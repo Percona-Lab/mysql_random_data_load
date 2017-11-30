@@ -31,7 +31,7 @@ type IndexField struct {
 	KeyName      string
 	SeqInIndex   int
 	ColumnName   string
-	Collation    string
+	Collation    sql.NullString
 	Cardinality  int
 	SubPart      sql.NullInt64
 	Packed       sql.NullString
@@ -190,6 +190,7 @@ func (t *Table) parse() error {
 
 		t.Fields = append(t.Fields, f)
 	}
+
 	if rows.Err() != nil {
 		return rows.Err()
 	}
@@ -221,7 +222,7 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 			&i.ColumnName, &i.Collation, &i.Cardinality, &i.SubPart,
 			&i.Packed, &i.Null, &i.IndexType, &i.Comment, &i.IndexComment)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read constraints: %s", err)
+			return nil, fmt.Errorf("cannot read indexes: %s", err)
 		}
 		if index, ok := indexes[i.KeyName]; !ok {
 			indexes[i.KeyName] = Index{
@@ -288,7 +289,7 @@ func getTriggers(db *sql.DB, schema, tableName string) ([]Trigger, error) {
 			&t.Created, &t.SQLMode, &t.Definer, &t.CharacterSetClient, &t.CollationConnection,
 			&t.DatabaseCollation)
 		if err != nil {
-			return nil, fmt.Errorf("cannot read constraints: %s", err)
+			return nil, fmt.Errorf("cannot read trigger: %s", err)
 		}
 		triggers = append(triggers, t)
 	}
