@@ -32,7 +32,7 @@ type IndexField struct {
 	SeqInIndex   int
 	ColumnName   string
 	Collation    sql.NullString
-	Cardinality  int
+	Cardinality  sql.NullInt64
 	SubPart      sql.NullInt64
 	Packed       sql.NullString
 	Null         string
