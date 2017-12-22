@@ -45,7 +45,7 @@ This is an early stage project.
 The program can detect if a field accepts NULLs and if it does, it will generate NULLs ramdomly (~ 10 % of the values).
 
 ## Usage
-`random-data-generator <database> <table> <number of rows> [options...]`
+`mysql_random_data_load <database> <table> <number of rows> [options...]`
 
 ## Options
 |Option|Description|
