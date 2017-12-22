@@ -66,7 +66,7 @@ If a field has Foreign Keys constraints, `random-data-load` will get up to `--ma
 The number of samples to get follows this rules:  
 **1.** Get the aproximate number of rows in the referenced table using the `rows` field in:  
 ```
-EXPLAIN COUNT(*) FROM <referenced schema>.<referenced table>
+EXPLAIN SELECT COUNT(*) FROM <referenced schema>.<referenced table>
 ```
 **1.1** If the number of rows is less than `max-fk-samples`, all rows are retrieved from the referenced table using this query: 
 ```
