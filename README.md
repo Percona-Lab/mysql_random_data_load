@@ -153,6 +153,20 @@ tcol28: 6.12
 1 row in set (0.00 sec)
 ```
 
+## How to download the precompiled binaries
+
+There are binaries available for each version for Linux and Darwin. You can find compiled binaries for each version in the releases tab:
+
+https://github.com/Percona-Lab/mysql_random_data_load/releases
+
+You can copy a link for the binary you want (in this case for 1.0.5), and use wget to download:
+
+```
+cd ~/bin/
+wget https://github.com/Percona-Lab/mysql_random_data_load/releases/download/0.1.5/mysql_random_data_load_linux_amd64
+chmod +x mysql_random_data_load_linux_amd64
+```
+
 ## To do
 - [ ] Add suport for all data types.
 - [X] Add supporrt for foreign keys.
