@@ -11,8 +11,8 @@ import (
 	"sync/atomic"
 	"time"
 
-	"github.com/Percona-Lab/random_data_load/internal/getters"
-	"github.com/Percona-Lab/random_data_load/tableparser"
+	"github.com/Percona-Lab/mysql_random_data_load/internal/getters"
+	"github.com/Percona-Lab/mysql_random_data_load/tableparser"
 	"github.com/gosuri/uiprogress"
 	"github.com/kr/pretty"
 
