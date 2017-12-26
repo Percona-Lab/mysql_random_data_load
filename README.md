@@ -45,7 +45,7 @@ This is an early stage project.
 The program can detect if a field accepts NULLs and if it does, it will generate NULLs ramdomly (~ 10 % of the values).
 
 ## Usage
-`random-data-generator <database> <table> <number of rows> [options...]`
+`mysql_random_data_load <database> <table> <number of rows> [options...]`
 
 ## Options
 |Option|Description|
@@ -66,7 +66,7 @@ If a field has Foreign Keys constraints, `random-data-load` will get up to `--ma
 The number of samples to get follows this rules:  
 **1.** Get the aproximate number of rows in the referenced table using the `rows` field in:  
 ```
-EXPLAIN COUNT(*) FROM <referenced schema>.<referenced table>
+EXPLAIN SELECT COUNT(*) FROM <referenced schema>.<referenced table>
 ```
 **1.1** If the number of rows is less than `max-fk-samples`, all rows are retrieved from the referenced table using this query: 
 ```
@@ -151,6 +151,20 @@ tcol26: green
 tcol27: 47.430
 tcol28: 6.12
 1 row in set (0.00 sec)
+```
+
+## How to download the precompiled binaries
+
+There are binaries available for each version for Linux and Darwin. You can find compiled binaries for each version in the releases tab:
+
+https://github.com/Percona-Lab/mysql_random_data_load/releases
+
+You can copy a link for the binary you want (in this case for 1.0.5), and use wget to download:
+
+```
+cd ~/bin/
+wget https://github.com/Percona-Lab/mysql_random_data_load/releases/download/0.1.5/mysql_random_data_load_linux_amd64
+chmod +x mysql_random_data_load_linux_amd64
 ```
 
 ## To do
