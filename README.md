@@ -176,6 +176,15 @@ chmod +x mysql_random_data_load_linux_amd64
 
 ## Versions history
 
+#### 0.1.6 
+- Improved generation speed (up to 50% faster)
+- Improved support for TokuDB (Thanks Agustin Gallego)
+- Code refactored
+- Improved debug logging
+
+#### 0.1.5 
+- Fixed handling of NULL collation for index parser
+
 #### 0.1.4
 - Fixed handling of time columns
 - Improved support of GENERATED columns
