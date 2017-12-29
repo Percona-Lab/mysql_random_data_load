@@ -181,6 +181,7 @@ chmod +x mysql_random_data_load_linux_amd64
 - Improved support for TokuDB (Thanks Agustin Gallego)
 - Code refactored
 - Improved debug logging
+- Added Query Per Seconds support (experimental)
 
 #### 0.1.5 
 - Fixed handling of NULL collation for index parser
