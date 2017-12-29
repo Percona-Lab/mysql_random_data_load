@@ -33,14 +33,14 @@ linux-386:
 	@mkdir -p ${BIN_DIR}
 	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz
 	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
-	@tar cvzf ${BIN_DIR}/$(pkg)_linux_386.tar.gz ${BIN_DIR}/$(pkg)
+	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_loader
 
 darwin-amd64: 
 	@echo "Building darwin/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
 	@rm -f ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz
 	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
-	@tar cvzf ${BIN_DIR}/$(pkg)_darwin_amd64.tar.gz ${BIN_DIR}/$(pkg)
+	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_loader
 
 style:
 	@echo ">> checking code style"
