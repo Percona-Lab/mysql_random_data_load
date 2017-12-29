@@ -23,17 +23,24 @@ clean:
 linux-amd64: 
 	@echo "Building linux/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@$(foreach pkg,$(pkgs),GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/$(pkg)_linux_amd64 ./;)
+	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_amd64.tar.gz
+	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
+	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_loader
+
 
 linux-386: 
 	@echo "Building linux/386 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@$(foreach pkg,$(pkgs),GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/$(pkg)_linux_386 ./;)
+	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz
+	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
+	@tar cvzf ${BIN_DIR}/$(pkg)_linux_386.tar.gz ${BIN_DIR}/$(pkg)
 
 darwin-amd64: 
 	@echo "Building darwin/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@$(foreach pkg,$(pkgs),GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/$(pkg)_darwin_amd64 ./;)
+	@rm -f ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz
+	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
+	@tar cvzf ${BIN_DIR}/$(pkg)_darwin_amd64.tar.gz ${BIN_DIR}/$(pkg)
 
 style:
 	@echo ">> checking code style"

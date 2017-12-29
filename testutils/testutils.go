@@ -160,6 +160,24 @@ func NotOk(tb testing.TB, err error) {
 	}
 }
 
+func IsNil(tb testing.TB, i interface{}, args ...interface{}) {
+	if i != nil {
+		msg := fmt.Sprintf("%s: expected nil, got %#v\n\n", caller(), i)
+		if len(args) > 0 {
+			msg = fmt.Sprintf("%s: %s "+args[0].(string), append([]interface{}{caller(), i}, args[1:]...)) + "\n"
+		}
+		fmt.Println(msg)
+		tb.FailNow()
+	}
+}
+
+func NotNil(tb testing.TB, i interface{}) {
+	if i == nil {
+		fmt.Printf("%s: expected value, got nil\n", caller())
+		tb.FailNow()
+	}
+}
+
 // equals fails the test if exp is not equal to act.
 func Equals(tb testing.TB, exp, act interface{}) {
 	if !reflect.DeepEqual(exp, act) {

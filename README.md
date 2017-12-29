@@ -56,9 +56,10 @@ The program can detect if a field accepts NULLs and if it does, it will generate
 |--host|Host name/ip|
 |--max-fk-samples|Maximum number of samples for fields having foreign keys constarints. Default: 100|
 |--max-retries|Maximum number of rows to retry in case of errors. See duplicated keys. Deafult: 100|
+|--no-progressbar|Skip showing the progress bar. Default: false|
 |--password|Password|
 |--port|Port number|
-|--show-progressbar|Show the progress bar. Default: true|
+|--qps|Queries per second. Default 0 (unlimited)|
 |--user|Username|
 
 ## Foreign keys support

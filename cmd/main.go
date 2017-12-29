@@ -3,37 +3,40 @@ package main
 import (
 	"database/sql"
 	"fmt"
-	"log"
 	"net/url"
 	"os"
+	"runtime"
 	"strings"
 	"sync"
-	"sync/atomic"
 	"time"
 
 	"github.com/Percona-Lab/mysql_random_data_load/internal/getters"
 	"github.com/Percona-Lab/mysql_random_data_load/tableparser"
+	"github.com/go-sql-driver/mysql"
 	"github.com/gosuri/uiprogress"
 	"github.com/kr/pretty"
+	"github.com/pkg/errors"
 
-	. "github.com/go-sql-driver/mysql"
+	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
-	app        = kingpin.New("chat", "A command-line chat application.")
+	app        = kingpin.New("mysql_random_data_loader", "MySQL Random Data Loader")
 	host       = app.Flag("host", "Host name/IP").Short('h').Default("127.0.0.1").String()
 	port       = app.Flag("port", "Port").Short('P').Default("3306").Int()
 	user       = app.Flag("user", "User").Short('u').String()
 	pass       = app.Flag("password", "Password").Short('p').String()
-	maxThreads = app.Flag("max-threads", "Maximum number of threads to run inserts").Default("1").Int()
+	maxThreads = app.Flag("max-threads", "Maximum number of threads to run inserts").Int()
 	debug      = app.Flag("debug", "Log debugging information").Bool()
 	bulkSize   = app.Flag("bulk-size", "Number of rows per insert statement").Default("1000").Int()
-	schema     = app.Arg("database", "Database").Required().String()
-	tableName  = app.Arg("table", "Table").Required().String()
-	rows       = app.Arg("rows", "Number of rows to insert").Required().Int()
-	maxRetries = app.Arg("max-retries", "Number of rows to insert").Default("10000").Int64()
-	progress   = app.Arg("show-progressbar", "Show progress bar").Default("true").Bool()
+	noProgress = app.Flag("no-progressbar", "Show progress bar").Default("false").Bool()
+	qps        = app.Flag("qps", "Queries per second. 0 = unlimited").Default("0").Int()
+	maxRetries = app.Flag("max-retries", "Number of rows to insert").Default("100").Int()
+
+	schema    = app.Arg("database", "Database").Required().String()
+	tableName = app.Arg("table", "Table").Required().String()
+	rows      = app.Arg("rows", "Number of rows to insert").Required().Int()
 
 	validFunctions = []string{"int", "string", "date", "date_in_range"}
 	maxValues      = map[string]int64{
@@ -51,14 +54,6 @@ var (
 
 type insertValues []getters.Getter
 
-func (g insertValues) String() string {
-	vals := []string{}
-	for _, val := range g {
-		vals = append(vals, val.String())
-	}
-	return strings.Join(vals, ", ")
-}
-
 func main() {
 	kingpin.MustParse(app.Parse(os.Args[1:]))
 
@@ -71,7 +66,7 @@ func main() {
 		address = fmt.Sprintf("%s:%d", address, *port)
 	}
 
-	dsn := Config{
+	dsn := mysql.Config{
 		User:      *user,
 		Passwd:    *pass,
 		Addr:      address,
@@ -84,184 +79,226 @@ func main() {
 	if err != nil {
 		panic(err)
 	}
-	defer db.Close()
+	db.SetMaxOpenConns(100)
 
 	// SET TimeZone to UTC to avoid errors due to random dates & daylight saving valid values
 	if _, err = db.Exec(`SET @@session.time_zone = "+00:00"`); err != nil {
 		log.Printf("Cannot set time zone to UTC: %s\n", err)
+		db.Close()
 		os.Exit(1)
 	}
 
 	table, err := tableparser.NewTable(db, *schema, *tableName)
 	if err != nil {
 		log.Printf("cannot get table %s struct: %s", *tableName, err)
+		db.Close()
 		os.Exit(1)
 	}
+
+	log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	if *debug {
-		pretty.Println(table)
+		log.SetLevel(log.DebugLevel)
 	}
+	log.Debug(pretty.Sprint(table))
+
 	if len(table.Triggers) > 0 {
-		log.Printf("There are triggers on the %s table that might affect this process:", *tableName)
+		log.Warnf("There are triggers on the %s table that might affect this process:", *tableName)
 		for _, t := range table.Triggers {
-			log.Printf("Trigger %q, %s %s", t.Trigger, t.Timing, t.Event)
-			log.Printf("Statement: %s", t.Statement)
+			log.Warnf("Trigger %q, %s %s", t.Trigger, t.Timing, t.Event)
+			log.Warnf("Statement: %s", t.Statement)
 		}
 	}
 
-	var wg sync.WaitGroup
-	var okRowsCount int64
-	values := makeValueFuncs(db, table.Fields)
+	if *bulkSize > *rows {
+		*bulkSize = *rows
+	}
 
-	resultsChan := make(chan int)
-	rowsChan := makeRowsChan(*rows, values)
+	if maxThreads == nil {
+		*maxThreads = runtime.NumCPU() * 10
+	}
 
 	if *maxThreads < 1 {
 		*maxThreads = 1
 	}
 
-	log.Println("Starting")
+	log.Info("Starting")
 
 	bar := uiprogress.AddBar(*rows).AppendCompleted().PrependElapsed()
-	if *progress {
+	if !*noProgress {
 		uiprogress.Start()
 	}
 
-	// This go-routine keeps track of how many rows were actually inserted
-	// by the bulk inserts since one or more rows could generate duplicated
-	// keys so, not allways the number of inserted rows = number of rows in
-	// the bulk insert
-
-	go func() {
-		for okCount := range resultsChan {
-			for i := 0; i < okCount; i++ {
-				bar.Incr()
-			}
-			atomic.AddInt64(&okRowsCount, int64(okCount))
-		}
-		wg.Done()
-	}()
-
-	for i := 0; i < *maxThreads; i++ {
-		wg.Add(1)
-		go runInsert(db, table, *bulkSize, rowsChan, resultsChan, &wg)
+	// Example: want 11 rows with bulksize 4:
+	// count = int(11 / 4) = 2 -> 2 bulk inserts having 4 rows each = 8 rows
+	// We need to run this insert twice:
+	// INSERT INTO table (f1, f2) VALUES (?, ?), (?, ?), (?, ?), (?, ?)
+	// remainder = rows - count = 11 - 8 = 3
+	// And then, we need to run this insert once to complete 11 rows
+	// INSERT INTO table (f1, f2) VALUES (?, ?), (?, ?), (?, ?)
+	count := *rows / *bulkSize
+	remainder := *rows - count**bulkSize
+	semaphores := makeSemaphores(*maxThreads)
+	rowValues := makeValueFuncs(db, table.Fields)
+	log.Debugf("Must run %d bulk inserts having %d rows each", count, *bulkSize)
+	okCount, err := run(db, table, bar, semaphores, rowValues, count, *bulkSize, *qps)
+	var okrCount, okiCount int // remainder & individual inserts OK count
+	if remainder > 0 {
+		log.Debugf("Must run 1 extra bulk insert having %d rows, to complete %d rows", remainder, *rows)
+		okrCount, err = run(db, table, bar, semaphores, rowValues, 1, remainder, *qps)
 	}
-	wg.Wait()
 
-	wg.Add(1)
-	close(resultsChan)
-	wg.Wait()
-
-	if okRowsCount != int64(*rows) {
-		log.Printf("Adding extra %d rows.", int64(*rows)-okRowsCount)
-		okCount, errors := loadExtraRows(db, table, int64(*rows)-okRowsCount, values, *maxRetries, bar)
-		okRowsCount += okCount
-		// If there are still errors
-		if okRowsCount != int64(*rows) && len(errors) > 0 {
-			for _, err := range errors {
-				fmt.Println(err)
-			}
-		}
+	// If there were errors and at this point we have less rows than *rows,
+	// retry adding individual rows (no bulk inserts)
+	totalOkCount := okCount + okrCount
+	retries := 0
+	if totalOkCount < *rows {
+		log.Debugf("Running extra %d individual inserts (duplicated keys?)", *rows-totalOkCount)
+	}
+	for totalOkCount < *rows && retries < *maxRetries {
+		okiCount, _ = run(db, table, bar, semaphores, rowValues, *rows-totalOkCount, 1, *qps)
+		retries++
+		totalOkCount += okiCount
 	}
 
 	time.Sleep(500 * time.Millisecond) // Let the progress bar to update
-	fmt.Printf("Total rows inserted: %d\n", okRowsCount)
+	log.Printf("%d rows inserted", totalOkCount)
+	db.Close()
 }
 
-func loadExtraRows(db *sql.DB, table *tableparser.Table, rows int64, values insertValues,
-	maxRetryCount int64, bar *uiprogress.Bar) (int64, []error) {
-	var okCount int64
-	var retryCount int
-	var errors []error
-	for okCount < rows && retryCount < 1000 {
-		retryCount++
-		if err := runOneInsert(db, table, values); err != nil {
-			errors = append(errors, err)
-			continue
+func run(db *sql.DB, table *tableparser.Table, bar *uiprogress.Bar, sem chan bool, rowValues insertValues, count, size int, qps int) (int, error) {
+	if count == 0 {
+		return 0, nil
+	}
+	var wg sync.WaitGroup
+
+	bulkStmt, err := db.Prepare(generateInsertStmt(table, size))
+	if err != nil {
+		return 0, errors.Wrap(err, "Cannot prepare bulk insert")
+	}
+
+	rowsChan := make(chan []interface{}, 1000)
+
+	okRowsChan := countRowsOK(count, bar)
+
+	go generateInsertData(count, size, rowValues, rowsChan)
+
+	var ticker <-chan time.Time
+	if qps > 0 {
+		delay := time.Second / time.Duration(qps)
+		ticker = time.NewTicker(delay).C
+	}
+	for i := 0; i < count; i++ {
+		rowData := <-rowsChan
+		<-sem
+		if ticker != nil {
+			<-ticker
+			log.Debugf("QPS in effect. Inserting ...")
 		}
-		okCount++
-		bar.Incr()
+		wg.Add(1)
+		go runInsert(bulkStmt, rowData, okRowsChan, sem, &wg)
 	}
-	return okCount, errors
+
+	wg.Wait()
+	okCount := <-okRowsChan
+	return okCount, nil
 }
 
-func makeRowsChan(rows int, values insertValues) chan insertValues {
-	preloadCount := 10000
-	if rows < preloadCount {
-		preloadCount = rows
+func makeSemaphores(count int) chan bool {
+	sem := make(chan bool, count)
+	for i := 0; i < count; i++ {
+		sem <- true
 	}
+	return sem
+}
 
-	rowsChan := make(chan insertValues, preloadCount)
+// This go-routine keeps track of how many rows were actually inserted
+// by the bulk inserts since one or more rows could generate duplicated
+// keys so, not allways the number of inserted rows = number of rows in
+// the bulk insert
+
+func countRowsOK(count int, bar *uiprogress.Bar) chan int {
+	var totalOk int
+	resultsChan := make(chan int, 10000)
 	go func() {
-		for i := 0; i < rows; i++ {
-			rowsChan <- values
+		for i := 0; i < count; i++ {
+			okCount := <-resultsChan
+			for j := 0; j < okCount; j++ {
+				bar.Incr()
+			}
+			totalOk += okCount
 		}
-		close(rowsChan)
+		resultsChan <- totalOk
 	}()
-	return rowsChan
+	return resultsChan
 }
 
-func runInsert(db *sql.DB, table *tableparser.Table, bulkSize int, valsChan chan insertValues,
-	resultsChan chan int, wg *sync.WaitGroup) {
-	defer wg.Done()
+// generateInsertData will generate 'rows' items, where each item in the channel has 'bulkSize' rows.
+// For example:
+// We need to load 6 rows using a bulk insert having 2 rows per insert, like this:
+// INSERT INTO table (f1, f2, f3) VALUES (?, ?, ?), (?, ?, ?)
+//
+// This function will put into rowsChan 3 elements, each one having the values for 2 rows:
+// rowsChan <- [ v1-1, v1-2, v1-3, v2-1, v2-2, v2-3 ]
+// rowsChan <- [ v3-1, v3-2, v3-3, v4-1, v4-2, v4-3 ]
+// rowsChan <- [ v1-5, v5-2, v5-3, v6-1, v6-2, v6-3 ]
+//
+func generateInsertData(count, size int, values insertValues, rowsChan chan []interface{}) {
+	//runtime.LockOSThread()
+	for i := 0; i < count; i++ {
+		insertRow := make([]interface{}, 0, len(values))
+		for j := 0; j < size; j++ {
+			for _, val := range values {
+				insertRow = append(insertRow, val.Value())
+			}
+		}
+		rowsChan <- insertRow
+	}
+}
 
+func generateInsertStmt(table *tableparser.Table, size int) string {
 	fields := getFieldNames(table.Fields)
-	baseSQL := fmt.Sprintf("INSERT IGNORE INTO %s.%s (%s) VALUES ",
+	query := fmt.Sprintf("INSERT IGNORE INTO %s.%s (%s) VALUES ",
 		backticks(table.Schema),
 		backticks(table.Name),
 		strings.Join(fields, ","),
 	)
-	separator := ""
-	sql := baseSQL
-	var count int
 
-	for vals := range valsChan {
-		sql += separator + "(" + vals.String() + ")\n"
-		separator = ", "
+	// Build the placeholders group for each row, including parenthesis: (?, ?, ...)
+	placeholders := "("
+	sep := ""
+	for i := 0; i < len(fields); i++ {
+		placeholders += sep + "?"
+		sep = ", "
+	}
+	placeholders += ")"
 
-		count++
-		if count < bulkSize {
-			continue
-		}
-		result, err := db.Exec(sql)
-
-		separator = ""
-		count = 0
-		sql = baseSQL
-
-		if err != nil {
-			resultsChan <- int(0)
-			continue
-		}
-		rowsAffected, _ := result.RowsAffected()
-		resultsChan <- int(rowsAffected)
+	// Join 'bulkSize' placeholders groups to the query
+	// INSERT INTO db.table (f1, f2, ...) VALUES (?, ?, ...), (?, ?, ...), ....
+	sep = ""
+	for i := 0; i < size; i++ {
+		query += sep + placeholders
+		sep = ", "
 	}
 
-	if count > 0 {
-		result, err := db.Exec(sql)
-		if err != nil {
-			log.Printf("cannot run insert: %s", err)
-			resultsChan <- int(0)
-			return
-		}
-		rowsAffected, _ := result.RowsAffected()
-		resultsChan <- int(rowsAffected)
-	}
+	return query
 }
 
-func runOneInsert(db *sql.DB, table *tableparser.Table, vals insertValues) error {
-	fields := getFieldNames(table.Fields)
-	query := fmt.Sprintf("INSERT INTO %s.%s (%s) VALUES (%s)",
-		backticks(table.Schema),
-		backticks(table.Name),
-		strings.Join(fields, ","),
-		vals.String(),
-	)
-	if _, err := db.Exec(query); err != nil {
-		return err
+func runInsert(stmt *sql.Stmt, data []interface{}, resultsChan chan int, sem chan bool, wg *sync.WaitGroup) {
+	result, err := stmt.Exec(data...)
+	if err != nil {
+		log.Debugf("Cannot run insert: %s", err)
+		resultsChan <- 0
+		wg.Done()
+		return
 	}
-	return nil
+
+	rowsAffected, _ := result.RowsAffected()
+	resultsChan <- int(rowsAffected)
+	sem <- true
+	wg.Done()
 }
 
+// makeValueFuncs returns an array of functions to generate all the values needed for a single row
 func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 	var values []getters.Getter
 	for _, field := range fields {

@@ -4,7 +4,7 @@ import (
 	"reflect"
 	"testing"
 
-	tu "github.com/Percona-Lab/random_data_load/testutils"
+	tu "github.com/Percona-Lab/mysql_random_data_load/testutils"
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
 )
