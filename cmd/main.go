@@ -15,24 +15,27 @@ import (
 	"github.com/go-sql-driver/mysql"
 	"github.com/gosuri/uiprogress"
 	"github.com/kr/pretty"
-	"github.com/pkg/errors"
 
 	log "github.com/sirupsen/logrus"
 	kingpin "gopkg.in/alecthomas/kingpin.v2"
 )
 
 var (
-	app        = kingpin.New("mysql_random_data_loader", "MySQL Random Data Loader")
-	host       = app.Flag("host", "Host name/IP").Short('h').Default("127.0.0.1").String()
-	port       = app.Flag("port", "Port").Short('P').Default("3306").Int()
-	user       = app.Flag("user", "User").Short('u').String()
-	pass       = app.Flag("password", "Password").Short('p').String()
-	maxThreads = app.Flag("max-threads", "Maximum number of threads to run inserts").Int()
-	debug      = app.Flag("debug", "Log debugging information").Bool()
+	app = kingpin.New("mysql_random_data_loader", "MySQL Random Data Loader")
+
 	bulkSize   = app.Flag("bulk-size", "Number of rows per insert statement").Default("1000").Int()
-	noProgress = app.Flag("no-progressbar", "Show progress bar").Default("false").Bool()
-	qps        = app.Flag("qps", "Queries per second. 0 = unlimited").Default("0").Int()
+	debug      = app.Flag("debug", "Log debugging information").Bool()
+	factor     = app.Flag("fk-samples-factor", "Percentage used to get random samples for foreign keys fields").Default("0.3").Float64()
+	host       = app.Flag("host", "Host name/IP").Short('h').Default("127.0.0.1").String()
 	maxRetries = app.Flag("max-retries", "Number of rows to insert").Default("100").Int()
+	maxThreads = app.Flag("max-threads", "Maximum number of threads to run inserts").Default("1").Int()
+	noProgress = app.Flag("no-progress", "Show progress bar").Default("false").Bool()
+	pass       = app.Flag("password", "Password").Short('p').String()
+	port       = app.Flag("port", "Port").Short('P').Default("3306").Int()
+	print      = app.Flag("print", "Print queries to the standard output instead of inserting them into the db").Bool()
+	samples    = app.Flag("max-fk-samples", "Maximum number of samples for foreign keys fields").Default("100").Int64()
+	user       = app.Flag("user", "User").Short('u').String()
+	version    = app.Flag("version", "Show version and exit").Bool()
 
 	schema    = app.Arg("database", "Database").Required().String()
 	tableName = app.Arg("table", "Table").Required().String()
@@ -50,12 +53,32 @@ var (
 		"double":    0x7FFFFFFF,
 		"bigint":    0x7FFFFFFFFFFFFFFF,
 	}
+
+	Version   = "0.0.0."
+	Commit    = "<sha1>"
+	Branch    = "branch-name"
+	Build     = "2017-01-01"
+	GoVersion = "1.9.2"
 )
 
 type insertValues []getters.Getter
+type insertFunction func(*sql.DB, string, chan int, chan bool, *sync.WaitGroup)
 
 func main() {
-	kingpin.MustParse(app.Parse(os.Args[1:]))
+	_, err := app.Parse(os.Args[1:])
+
+	if *version {
+		fmt.Printf("Version   : %s\n", Version)
+		fmt.Printf("Commit    : %s\n", Commit)
+		fmt.Printf("Branch    : %s\n", Branch)
+		fmt.Printf("Build     : %s\n", Build)
+		fmt.Printf("Go version: %s\n", GoVersion)
+		return
+	}
+	if err != nil {
+		log.Errorln(err)
+		os.Exit(1)
+	}
 
 	address := *host
 	net := "unix"
@@ -98,6 +121,7 @@ func main() {
 	log.SetFormatter(&log.TextFormatter{FullTimestamp: true})
 	if *debug {
 		log.SetLevel(log.DebugLevel)
+		*noProgress = true
 	}
 	log.Debug(pretty.Sprint(table))
 
@@ -121,11 +145,8 @@ func main() {
 		*maxThreads = 1
 	}
 
-	log.Info("Starting")
-
-	bar := uiprogress.AddBar(*rows).AppendCompleted().PrependElapsed()
-	if !*noProgress {
-		uiprogress.Start()
+	if !*print {
+		log.Info("Starting")
 	}
 
 	// Example: want 11 rows with bulksize 4:
@@ -135,16 +156,43 @@ func main() {
 	// remainder = rows - count = 11 - 8 = 3
 	// And then, we need to run this insert once to complete 11 rows
 	// INSERT INTO table (f1, f2) VALUES (?, ?), (?, ?), (?, ?)
+	newLineOnEachRow := false
 	count := *rows / *bulkSize
 	remainder := *rows - count**bulkSize
 	semaphores := makeSemaphores(*maxThreads)
 	rowValues := makeValueFuncs(db, table.Fields)
 	log.Debugf("Must run %d bulk inserts having %d rows each", count, *bulkSize)
-	okCount, err := run(db, table, bar, semaphores, rowValues, count, *bulkSize, *qps)
+
+	var runInsertFunc insertFunction
+	runInsertFunc = runInsert
+	if *print {
+		*maxThreads = 1
+		*noProgress = true
+		newLineOnEachRow = true
+		runInsertFunc = func(db *sql.DB, insertQuery string, resultsChan chan int, sem chan bool, wg *sync.WaitGroup) {
+			fmt.Println(insertQuery)
+			resultsChan <- *bulkSize
+			sem <- true
+			wg.Done()
+		}
+	}
+
+	bar := uiprogress.AddBar(*rows).AppendCompleted().PrependElapsed()
+	if !*noProgress {
+		uiprogress.Start()
+	}
+
+	okCount, err := run(db, table, bar, semaphores, rowValues, count, *bulkSize, runInsertFunc, newLineOnEachRow)
+	if err != nil {
+		log.Errorln(err)
+	}
 	var okrCount, okiCount int // remainder & individual inserts OK count
 	if remainder > 0 {
 		log.Debugf("Must run 1 extra bulk insert having %d rows, to complete %d rows", remainder, *rows)
-		okrCount, err = run(db, table, bar, semaphores, rowValues, 1, remainder, *qps)
+		okrCount, err = run(db, table, bar, semaphores, rowValues, 1, remainder, runInsertFunc, newLineOnEachRow)
+		if err != nil {
+			log.Errorln(err)
+		}
 	}
 
 	// If there were errors and at this point we have less rows than *rows,
@@ -155,47 +203,69 @@ func main() {
 		log.Debugf("Running extra %d individual inserts (duplicated keys?)", *rows-totalOkCount)
 	}
 	for totalOkCount < *rows && retries < *maxRetries {
-		okiCount, _ = run(db, table, bar, semaphores, rowValues, *rows-totalOkCount, 1, *qps)
+		okiCount, err = run(db, table, bar, semaphores, rowValues, *rows-totalOkCount, 1, runInsertFunc, newLineOnEachRow)
+		if err != nil {
+			log.Errorf("Cannot run extra insert: %s", err)
+		}
+
 		retries++
 		totalOkCount += okiCount
 	}
 
 	time.Sleep(500 * time.Millisecond) // Let the progress bar to update
-	log.Printf("%d rows inserted", totalOkCount)
+	if !*print {
+		log.Printf("%d rows inserted", totalOkCount)
+	}
 	db.Close()
 }
 
-func run(db *sql.DB, table *tableparser.Table, bar *uiprogress.Bar, sem chan bool, rowValues insertValues, count, size int, qps int) (int, error) {
+func run(db *sql.DB, table *tableparser.Table, bar *uiprogress.Bar, sem chan bool,
+	rowValues insertValues, count, bulkSize int, insertFunc insertFunction, newLineOnEachRow bool) (int, error) {
 	if count == 0 {
 		return 0, nil
 	}
 	var wg sync.WaitGroup
-
-	bulkStmt, err := db.Prepare(generateInsertStmt(table, size))
-	if err != nil {
-		return 0, errors.Wrap(err, "Cannot prepare bulk insert")
-	}
-
-	rowsChan := make(chan []interface{}, 1000)
-
+	insertQuery := generateInsertStmt(table)
+	rowsChan := make(chan []string, 1000)
 	okRowsChan := countRowsOK(count, bar)
 
-	go generateInsertData(count, size, rowValues, rowsChan)
-
-	var ticker <-chan time.Time
-	if qps > 0 {
-		delay := time.Second / time.Duration(qps)
-		ticker = time.NewTicker(delay).C
+	go generateInsertData(count*bulkSize, rowValues, rowsChan)
+	defaultSeparator1 := ""
+	if newLineOnEachRow {
+		defaultSeparator1 = "\n"
 	}
-	for i := 0; i < count; i++ {
+
+	i := 0
+	rowsCount := 0
+	sep1, sep2 := defaultSeparator1, ""
+
+	for i < count {
 		rowData := <-rowsChan
-		<-sem
-		if ticker != nil {
-			<-ticker
-			log.Debugf("QPS in effect. Inserting ...")
+		rowsCount++
+		insertQuery += sep1 + " ("
+		for _, field := range rowData {
+			insertQuery += sep2 + string(field)
+			sep2 = ", "
 		}
+		insertQuery += ")"
+		sep1 = ", "
+		if newLineOnEachRow {
+			sep1 += "\n"
+		}
+		sep2 = ""
+		if rowsCount < bulkSize {
+			continue
+		}
+
+		insertQuery += ";\n"
+		<-sem
 		wg.Add(1)
-		go runInsert(bulkStmt, rowData, okRowsChan, sem, &wg)
+		go insertFunc(db, insertQuery, okRowsChan, sem, &wg)
+
+		insertQuery = generateInsertStmt(table)
+		sep1, sep2 = defaultSeparator1, ""
+		rowsCount = 0
+		i++
 	}
 
 	wg.Wait()
@@ -242,57 +312,40 @@ func countRowsOK(count int, bar *uiprogress.Bar) chan int {
 // rowsChan <- [ v3-1, v3-2, v3-3, v4-1, v4-2, v4-3 ]
 // rowsChan <- [ v1-5, v5-2, v5-3, v6-1, v6-2, v6-3 ]
 //
-func generateInsertData(count, size int, values insertValues, rowsChan chan []interface{}) {
-	//runtime.LockOSThread()
+func generateInsertData(count int, values insertValues, rowsChan chan []string) {
 	for i := 0; i < count; i++ {
-		insertRow := make([]interface{}, 0, len(values))
-		for j := 0; j < size; j++ {
-			for _, val := range values {
-				insertRow = append(insertRow, val.Value())
-			}
+		insertRow := make([]string, 0, len(values))
+		for _, val := range values {
+			insertRow = append(insertRow, val.String())
 		}
 		rowsChan <- insertRow
 	}
 }
 
-func generateInsertStmt(table *tableparser.Table, size int) string {
+func generateInsertStmt(table *tableparser.Table) string {
 	fields := getFieldNames(table.Fields)
 	query := fmt.Sprintf("INSERT IGNORE INTO %s.%s (%s) VALUES ",
 		backticks(table.Schema),
 		backticks(table.Name),
 		strings.Join(fields, ","),
 	)
-
-	// Build the placeholders group for each row, including parenthesis: (?, ?, ...)
-	placeholders := "("
-	sep := ""
-	for i := 0; i < len(fields); i++ {
-		placeholders += sep + "?"
-		sep = ", "
-	}
-	placeholders += ")"
-
-	// Join 'bulkSize' placeholders groups to the query
-	// INSERT INTO db.table (f1, f2, ...) VALUES (?, ?, ...), (?, ?, ...), ....
-	sep = ""
-	for i := 0; i < size; i++ {
-		query += sep + placeholders
-		sep = ", "
-	}
-
 	return query
 }
 
-func runInsert(stmt *sql.Stmt, data []interface{}, resultsChan chan int, sem chan bool, wg *sync.WaitGroup) {
-	result, err := stmt.Exec(data...)
+func runInsert(db *sql.DB, insertQuery string, resultsChan chan int, sem chan bool, wg *sync.WaitGroup) {
+	result, err := db.Exec(insertQuery)
 	if err != nil {
 		log.Debugf("Cannot run insert: %s", err)
 		resultsChan <- 0
+		sem <- true
 		wg.Done()
 		return
 	}
 
-	rowsAffected, _ := result.RowsAffected()
+	rowsAffected, err := result.RowsAffected()
+	if err != nil {
+		log.Errorf("Cannot get rows affected after insert: %s", err)
+	}
 	resultsChan <- int(rowsAffected)
 	sem <- true
 	wg.Done()

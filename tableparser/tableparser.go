@@ -7,6 +7,8 @@ import (
 	"regexp"
 	"strings"
 	"time"
+
+	"github.com/apex/log"
 )
 
 type Table struct {
@@ -21,9 +23,10 @@ type Table struct {
 }
 
 type Index struct {
-	Name   string
-	Unique bool
-	Fields []string
+	Name    string
+	Unique  bool
+	Fields  []string
+	Visible bool
 }
 
 type IndexField struct {
@@ -39,6 +42,7 @@ type IndexField struct {
 	IndexType    string
 	Comment      string
 	IndexComment string
+	Visible      bool // MySQL 8.0+
 }
 
 type Constraint struct {
@@ -73,6 +77,7 @@ type Field struct {
 	GenerationExpression   string
 	SetEnumVals            []string
 	Constraint             *Constraint
+	SrsID                  sql.NullString
 }
 
 type Trigger struct {
@@ -162,12 +167,17 @@ func (t *Table) parse() error {
 			&f.ColumnComment,
 		}
 
-		if cols, err := rows.Columns(); err == nil && len(cols) > 20 { //&& cols[20] == "GENERATION_EXPRESSION" {
-			fields = append(fields, &f.GenerationExpression)
+		if cols, err := rows.Columns(); err == nil {
+			if len(cols) > 20 { //&& cols[20] == "GENERATION_EXPRESSION" {
+				fields = append(fields, &f.GenerationExpression)
+			}
+			if len(cols) > 21 { // cols[21] == "SRS ID" {
+				fields = append(fields, &f.SrsID)
+			}
 		}
 		err := rows.Scan(fields...)
 		if err != nil {
-			continue
+			log.Errorf("Cannot get table fields: %s", err)
 		}
 
 		allowedValues := []string{}
@@ -217,18 +227,27 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 
 	for rows.Next() {
 		var i IndexField
-		var table string
-		err := rows.Scan(&table, &i.NonUnique, &i.KeyName, &i.SeqInIndex,
+		var table, visible string
+		fields := []interface{}{&table, &i.NonUnique, &i.KeyName, &i.SeqInIndex,
 			&i.ColumnName, &i.Collation, &i.Cardinality, &i.SubPart,
-			&i.Packed, &i.Null, &i.IndexType, &i.Comment, &i.IndexComment)
+			&i.Packed, &i.Null, &i.IndexType, &i.Comment, &i.IndexComment,
+		}
+
+		cols, err := rows.Columns()
+		if err == nil && len(cols) == 14 && cols[13] == "Visible" {
+			fields = append(fields, &visible)
+		}
+
+		err = rows.Scan(fields...)
 		if err != nil {
 			return nil, fmt.Errorf("cannot read indexes: %s", err)
 		}
 		if index, ok := indexes[i.KeyName]; !ok {
 			indexes[i.KeyName] = Index{
-				Name:   i.KeyName,
-				Unique: !i.NonUnique,
-				Fields: []string{i.ColumnName},
+				Name:    i.KeyName,
+				Unique:  !i.NonUnique,
+				Fields:  []string{i.ColumnName},
+				Visible: visible == "YES" || visible == "",
 			}
 
 		} else {

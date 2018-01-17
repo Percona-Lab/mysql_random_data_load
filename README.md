@@ -61,6 +61,7 @@ The program can detect if a field accepts NULLs and if it does, it will generate
 |--port|Port number|
 |--qps|Queries per second. Default 0 (unlimited)|
 |--user|Username|
+|--version|Show version and exit|
 
 ## Foreign keys support
 If a field has Foreign Keys constraints, `random-data-load` will get up to `--max-fk-samples` random samples from the referenced tables in order to insert valid values for the field.  
