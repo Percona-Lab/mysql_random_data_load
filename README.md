@@ -59,7 +59,7 @@ The program can detect if a field accepts NULLs and if it does, it will generate
 |--no-progressbar|Skip showing the progress bar. Default: false|
 |--password|Password|
 |--port|Port number|
-|--qps|Queries per second. Default 0 (unlimited)|
+|--Print|Print queries to the standard output instead of inserting them into the db|
 |--user|Username|
 |--version|Show version and exit|
 
@@ -176,6 +176,12 @@ chmod +x mysql_random_data_load_linux_amd64
 - [ ] Support custom functions via LUA plugins.
 
 ## Versions history
+
+#### 0.1.7 
+- Support for MySQL 8.0
+- Added --print parameter 
+- Added --version parameter
+- Removed qps parameter
 
 #### 0.1.6 
 - Improved generation speed (up to 50% faster)
