@@ -4,17 +4,6 @@ go:
   - 1.9.x
   - master
 
-before_install:
-  - go get golang.org/x/tools/cmd/cover
-  - go get -u github.com/golang/dep/cmd/dep
-  - dep ensure
-
-before_script:
-  - echo -e "[server]\ninnodb_log_file_size=256MB\ninnodb_buffer_pool_size=512MB\nmax_allowed_packet=16MB" | sudo tee -a /etc/mysql/my.cnf
-  - sudo service mysql restart
-  - .travis/wait_mysql.sh
-  - mysql < testdata/schema/saquila.sql
-
 matrix:
   include:
     - env: DB=MYSQL8.0
@@ -24,6 +13,9 @@ matrix:
       services:
         - docker
       before_install:
+        - go get golang.org/x/tools/cmd/cover
+        - go get -u github.com/golang/dep/cmd/dep
+        - dep ensure
         - docker pull mysql:8.0
         - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=gotest -e MYSQL_PASSWORD=secret -e MYSQL_ROOT_PASSWORD=verysecret
           mysql:8.0 --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
@@ -39,6 +31,9 @@ matrix:
       services:
         - docker
       before_install:
+        - go get golang.org/x/tools/cmd/cover
+        - go get -u github.com/golang/dep/cmd/dep
+        - dep ensure
         - docker pull mysql:5.7
         - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=gotest -e MYSQL_PASSWORD=secret -e MYSQL_ROOT_PASSWORD=verysecret
           mysql:5.6 --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
@@ -54,6 +49,9 @@ matrix:
       services:
         - docker
       before_install:
+        - go get golang.org/x/tools/cmd/cover
+        - go get -u github.com/golang/dep/cmd/dep
+        - dep ensure
         - docker pull mysql:5.6
         - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=gotest -e MYSQL_PASSWORD=secret -e MYSQL_ROOT_PASSWORD=verysecret
           mysql:5.6 --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
