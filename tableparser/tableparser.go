@@ -9,8 +9,8 @@ import (
 	"strings"
 	"time"
 
-	"github.com/apex/log"
 	"github.com/pkg/errors"
+	log "github.com/sirupsen/logrus"
 )
 
 type NullTime struct {

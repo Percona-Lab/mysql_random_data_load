@@ -6,6 +6,8 @@ go:
 
 before_install:
   - go get golang.org/x/tools/cmd/cover
+  - go get -u github.com/golang/dep/cmd/dep
+  - dep ensure
 
 before_script:
   - echo -e "[server]\ninnodb_log_file_size=256MB\ninnodb_buffer_pool_size=512MB\nmax_allowed_packet=16MB" | sudo tee -a /etc/mysql/my.cnf

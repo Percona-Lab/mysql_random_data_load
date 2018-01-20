@@ -6,9 +6,9 @@ import (
 	"time"
 
 	tu "github.com/Percona-Lab/mysql_random_data_load/testutils"
-	"github.com/apex/log"
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
+	log "github.com/sirupsen/logrus"
 )
 
 func TestParse56(t *testing.T) {
