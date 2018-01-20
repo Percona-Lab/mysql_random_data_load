@@ -21,7 +21,9 @@ matrix:
           -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8.0 --innodb_log_file_size=256MB 
           --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
+        - cp .travis/docker.cnf ~/.my.cnf
         - .travis/wait_mysql.sh
+        - mysql < testdata/schema/sakila.sql
       before_script:
         - export TEST_DSN="root:@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
@@ -40,7 +42,9 @@ matrix:
           -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.7 --innodb_log_file_size=256MB 
           --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
+        - cp .travis/docker.cnf ~/.my.cnf
         - .travis/wait_mysql.sh
+        - mysql < testdata/schema/sakila.sql
       before_script:
         - export TEST_DSN="root:@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
@@ -59,7 +63,9 @@ matrix:
           -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.6
           --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
+        - cp .travis/docker.cnf ~/.my.cnf
         - .travis/wait_mysql.sh
+        - mysql < testdata/schema/sakila.sql
       before_script:
         - export TEST_DSN="root@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
