@@ -28,7 +28,7 @@ matrix:
         - sleep 30
         - .travis/wait_mysql.sh
       before_script:
-        - export TEST_DSN=gotest:secret@tcp(127.0.0.1:3306)/sakila?parseTime=true
+        - export TEST_DSN="gotest:secret@tcp(127.0.0.1:3306)/sakila?parseTime=true"
 
     - env: DB=MYSQL57
       sudo: required
@@ -43,7 +43,7 @@ matrix:
         - sleep 30
         - .travis/wait_mysql.sh
       before_script:
-        - export TEST_DSN=gotest:secret@tcp(127.0.0.1:3306)/sakila?parseTime=true
+        - export TEST_DSN="gotest:secret@tcp(127.0.0.1:3306)/sakila?parseTime=true"
 
     - env: DB=MYSQL56
       sudo: required
@@ -58,7 +58,7 @@ matrix:
         - sleep 30
         - .travis/wait_mysql.sh
       before_script:
-        - export TEST_DSN=gotest:secret@tcp(127.0.0.1:3306)/sakila?parseTime=true
+        - export TEST_DSN="gotest:secret@tcp(127.0.0.1:3306)/sakila?parseTime=true"
 
 script:
   - go test -v -race ./...
