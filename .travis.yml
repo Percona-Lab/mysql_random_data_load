@@ -17,14 +17,15 @@ matrix:
         - go get -u github.com/golang/dep/cmd/dep
         - dep ensure
         - docker pull mysql:8.0
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=gotest -e MYSQL_PASSWORD=secret -e MYSQL_ROOT_PASSWORD=verysecret
-          mysql:8.0 --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
+        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -v ./testdata/schema/:/docker-entrypoint-initdb.d/ 
+          -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8.0 --innodb_log_file_size=256MB 
+          --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
         - .travis/wait_mysql.sh
       before_script:
-        - export TEST_DSN="gotest:secret@tcp(127.0.0.1:3307)/sakila?parseTime=true"
+        - export TEST_DSN="root:@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
-    - env: DB=MYSQL57
+    - env: DB=MYSQL5.7
       sudo: required
       dist: trusty
       go: 1.9.x
@@ -35,14 +36,15 @@ matrix:
         - go get -u github.com/golang/dep/cmd/dep
         - dep ensure
         - docker pull mysql:5.7
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=gotest -e MYSQL_PASSWORD=secret -e MYSQL_ROOT_PASSWORD=verysecret
-          mysql:5.6 --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
+        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -v ./testdata/schema/:/docker-entrypoint-initdb.d/ 
+          -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.7 --innodb_log_file_size=256MB 
+          --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
         - .travis/wait_mysql.sh
       before_script:
-        - export TEST_DSN="gotest:secret@tcp(127.0.0.1:3307)/sakila?parseTime=true"
+        - export TEST_DSN="root:@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
-    - env: DB=MYSQL56
+    - env: DB=MYSQL5.6
       sudo: required
       dist: trusty
       go: 1.9.x
@@ -53,12 +55,13 @@ matrix:
         - go get -u github.com/golang/dep/cmd/dep
         - dep ensure
         - docker pull mysql:5.6
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=gotest -e MYSQL_PASSWORD=secret -e MYSQL_ROOT_PASSWORD=verysecret
-          mysql:5.6 --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
+        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -v ./testdata/schema/:/docker-entrypoint-initdb.d/ 
+          -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.6
+          --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
         - .travis/wait_mysql.sh
       before_script:
-        - export TEST_DSN="gotest:secret@tcp(127.0.0.1:3307)/sakila?parseTime=true"
+        - export TEST_DSN="root@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
 script:
   - go test -v -race ./...
