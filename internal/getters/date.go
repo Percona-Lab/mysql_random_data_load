@@ -22,10 +22,15 @@ func (r *RandomDate) Value() interface{} {
 
 func (r *RandomDate) String() string {
 	d := r.Value().(time.Time)
+	return d.Format("2006-01-02 15:03:04")
+}
+
+func (r *RandomDate) Quote() string {
+	d := r.Value().(time.Time)
 	return fmt.Sprintf("'%s'", d.Format("2006-01-02 15:03:04"))
 }
 
-func NewRandomDate(name string, allowNull bool) Getter {
+func NewRandomDate(name string, allowNull bool) *RandomDate {
 	return &RandomDate{name, allowNull}
 }
 
@@ -46,10 +51,15 @@ func (r *RandomDateInRange) Value() interface{} {
 
 func (r *RandomDateInRange) String() string {
 	d := r.Value().(time.Time)
+	return d.Format("2006-01-02 15:03:04")
+}
+
+func (r *RandomDateInRange) Quote() string {
+	d := r.Value().(time.Time)
 	return fmt.Sprintf("'%s'", d.Format("2006-01-02 15:03:04"))
 }
 
-func NewRandomDateInRange(name string, min, max string, allowNull bool) Getter {
+func NewRandomDateInRange(name string, min, max string, allowNull bool) *RandomDateInRange {
 	if min == "" {
 		t := time.Now().Add(-1 * time.Duration(oneYear) * time.Second)
 		min = t.Format("2006-01-02")

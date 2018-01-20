@@ -61,7 +61,12 @@ var (
 	GoVersion = "1.9.2"
 )
 
-type insertValues []getters.Getter
+type getter interface {
+	Value() interface{}
+	Quote() string
+	String() string
+}
+type insertValues []getter
 type insertFunction func(*sql.DB, string, chan int, chan bool, *sync.WaitGroup)
 
 func main() {
@@ -163,8 +168,7 @@ func main() {
 	rowValues := makeValueFuncs(db, table.Fields)
 	log.Debugf("Must run %d bulk inserts having %d rows each", count, *bulkSize)
 
-	var runInsertFunc insertFunction
-	runInsertFunc = runInsert
+	runInsertFunc := runInsert
 	if *print {
 		*maxThreads = 1
 		*noProgress = true
@@ -226,7 +230,7 @@ func run(db *sql.DB, table *tableparser.Table, bar *uiprogress.Bar, sem chan boo
 	}
 	var wg sync.WaitGroup
 	insertQuery := generateInsertStmt(table)
-	rowsChan := make(chan []string, 1000)
+	rowsChan := make(chan []getter, 1000)
 	okRowsChan := countRowsOK(count, bar)
 
 	go generateInsertData(count*bulkSize, rowValues, rowsChan)
@@ -244,7 +248,7 @@ func run(db *sql.DB, table *tableparser.Table, bar *uiprogress.Bar, sem chan boo
 		rowsCount++
 		insertQuery += sep1 + " ("
 		for _, field := range rowData {
-			insertQuery += sep2 + string(field)
+			insertQuery += sep2 + field.Quote()
 			sep2 = ", "
 		}
 		insertQuery += ")"
@@ -312,11 +316,11 @@ func countRowsOK(count int, bar *uiprogress.Bar) chan int {
 // rowsChan <- [ v3-1, v3-2, v3-3, v4-1, v4-2, v4-3 ]
 // rowsChan <- [ v1-5, v5-2, v5-3, v6-1, v6-2, v6-3 ]
 //
-func generateInsertData(count int, values insertValues, rowsChan chan []string) {
+func generateInsertData(count int, values insertValues, rowsChan chan []getter) {
 	for i := 0; i < count; i++ {
-		insertRow := make([]string, 0, len(values))
+		insertRow := make([]getter, 0, len(values))
 		for _, val := range values {
-			insertRow = append(insertRow, val.String())
+			insertRow = append(insertRow, val)
 		}
 		rowsChan <- insertRow
 	}
@@ -353,7 +357,7 @@ func runInsert(db *sql.DB, insertQuery string, resultsChan chan int, sem chan bo
 
 // makeValueFuncs returns an array of functions to generate all the values needed for a single row
 func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
-	var values []getters.Getter
+	var values []getter
 	for _, field := range fields {
 		if !field.IsNullable && field.ColumnKey == "PRI" &&
 			strings.Contains(field.Extra, "auto_increment") {

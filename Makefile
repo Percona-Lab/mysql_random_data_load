@@ -14,7 +14,7 @@ LDFLAGS="-X main.Version=${VERSION} -X main.Build=${BUILD} -X main.Commit=${COMM
 
 .PHONY: all style format build test vet tarball linux-amd64
 
-all: clean linux-amd64 darwin-amd64
+all: clean darwin-amd64 linux-amd64 
 
 clean:
 	@echo "Cleaning binaries dir ${BIN_DIR}"
@@ -24,22 +24,21 @@ linux-amd64:
 	@echo "Building linux/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
 	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_amd64.tar.gz
-	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
+	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader main.go
 	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_loader
-
 
 linux-386: 
 	@echo "Building linux/386 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
 	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz
-	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
+	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader main.go
 	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_loader
 
 darwin-amd64: 
 	@echo "Building darwin/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
 	@rm -f ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz
-	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader cmd/main.go
+	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader main.go
 	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_loader
 
 style:

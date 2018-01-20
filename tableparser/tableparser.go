@@ -2,6 +2,7 @@ package tableparser
 
 import (
 	"database/sql"
+	"database/sql/driver"
 	"fmt"
 	"net/url"
 	"regexp"
@@ -9,28 +10,51 @@ import (
 	"time"
 
 	"github.com/apex/log"
+	"github.com/pkg/errors"
 )
 
+type NullTime struct {
+	Time  time.Time
+	Valid bool // Valid is true if Time is not NULL
+}
+
+// Scan implements the Scanner interface.
+func (nt *NullTime) Scan(value interface{}) error {
+	nt.Time, nt.Valid = value.(time.Time)
+	return nil
+}
+
+// Value implements the driver Valuer interface.
+func (nt NullTime) Value() (driver.Value, error) {
+	if !nt.Valid {
+		return nil, nil
+	}
+	return nt.Time, nil
+}
+
+// Table holds the table definition with all fields, indexes and triggers
 type Table struct {
-	Schema      string
-	Name        string
-	Fields      []Field
-	Indexes     map[string]Index
+	Schema  string
+	Name    string
+	Fields  []Field
+	Indexes map[string]Index
+	//TODO Include complete indexes information
 	Constraints []Constraint
 	Triggers    []Trigger
 	//
 	conn *sql.DB
 }
 
+// Index holds the basic index information
 type Index struct {
 	Name    string
-	Unique  bool
 	Fields  []string
+	Unique  bool
 	Visible bool
 }
 
+// IndexField holds raw index information as defined in INFORMATION_SCHEMA table
 type IndexField struct {
-	NonUnique    bool
 	KeyName      string
 	SeqInIndex   int
 	ColumnName   string
@@ -42,9 +66,11 @@ type IndexField struct {
 	IndexType    string
 	Comment      string
 	IndexComment string
+	NonUnique    bool
 	Visible      bool // MySQL 8.0+
 }
 
+// Constraint holds Foreign Keys information
 type Constraint struct {
 	ConstraintName        string
 	ColumnName            string
@@ -53,6 +79,7 @@ type Constraint struct {
 	ReferencedColumnName  string
 }
 
+// Field holds raw field information as defined in INFORMATION_SCHEMA
 type Field struct {
 	TableCatalog           string
 	TableSchema            string
@@ -80,13 +107,14 @@ type Field struct {
 	SrsID                  sql.NullString
 }
 
+// Trigger holds raw trigger information as defined in INFORMATION_SCHEMA
 type Trigger struct {
 	Trigger             string
 	Event               string
 	Table               string
 	Statement           string
 	Timing              string
-	Created             time.Time
+	Created             NullTime
 	SQLMode             string
 	Definer             string
 	CharacterSetClient  string
@@ -125,59 +153,34 @@ func NewTable(db *sql.DB, schema, tableName string) (*Table, error) {
 
 func (t *Table) parse() error {
 	//                           +--------------------------- field type
-	//                           |          +---------------- field size / enum values:
-	//                           |          |                    decimal(10,2) or enum('a','b')
-	//                           |          |       +-------- extra info (unsigned, etc)
-	//                           |          |       |
-	re := regexp.MustCompile("^(.*?)(?:\\((.*?)\\)(.*))?$")
-	query := "SELECT * FROM `information_schema`.`COLUMNS`" +
-		fmt.Sprintf(" WHERE TABLE_SCHEMA = '%s' AND TABLE_NAME = '%s'", t.Schema, t.Name)
+	//                           |          +---------------- field size / enum values: decimal(10,2) or enum('a','b')
+	//                           |          |     +---------- extra info (unsigned, etc)
+	//                           |          |     |
+	re := regexp.MustCompile(`^(.*?)(?:\((.*?)\)(.*))?$`)
+
+	query := "SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
 
 	constraints := constraintsAsMap(t.Constraints)
 
-	rows, err := t.conn.Query(query)
+	rows, err := t.conn.Query(query, t.Schema, t.Name)
 	if err != nil {
 		return err
 	}
 	defer rows.Close()
 
+	cols, err := rows.Columns()
+	if err != nil {
+		return errors.Wrap(err, "Cannot get column names")
+	}
+
 	for rows.Next() {
 		var f Field
 		var allowNull string
-		fields := []interface{}{
-			&f.TableCatalog,
-			&f.TableSchema,
-			&f.TableName,
-			&f.ColumnName,
-			&f.OrdinalPosition,
-			&f.ColumnDefault,
-			&allowNull,
-			&f.DataType,
-			&f.CharacterMaximumLength,
-			&f.CharacterOctetLength,
-			&f.NumericPrecision,
-			&f.NumericScale,
-			&f.DatetimePrecision,
-			&f.CharacterSetName,
-			&f.CollationName,
-			&f.ColumnType,
-			&f.ColumnKey,
-			&f.Extra,
-			&f.Privileges,
-			&f.ColumnComment,
-		}
-
-		if cols, err := rows.Columns(); err == nil {
-			if len(cols) > 20 { //&& cols[20] == "GENERATION_EXPRESSION" {
-				fields = append(fields, &f.GenerationExpression)
-			}
-			if len(cols) > 21 { // cols[21] == "SRS ID" {
-				fields = append(fields, &f.SrsID)
-			}
-		}
+		fields := makeScanRecipients(&f, &allowNull, cols)
 		err := rows.Scan(fields...)
 		if err != nil {
 			log.Errorf("Cannot get table fields: %s", err)
+			continue
 		}
 
 		allowedValues := []string{}
@@ -207,6 +210,41 @@ func (t *Table) parse() error {
 	return nil
 }
 
+func makeScanRecipients(f *Field, allowNull *string, cols []string) []interface{} {
+	fields := []interface{}{
+		&f.TableCatalog,
+		&f.TableSchema,
+		&f.TableName,
+		&f.ColumnName,
+		&f.OrdinalPosition,
+		&f.ColumnDefault,
+		&allowNull,
+		&f.DataType,
+		&f.CharacterMaximumLength,
+		&f.CharacterOctetLength,
+		&f.NumericPrecision,
+		&f.NumericScale,
+		&f.DatetimePrecision,
+		&f.CharacterSetName,
+		&f.CollationName,
+		&f.ColumnType,
+		&f.ColumnKey,
+		&f.Extra,
+		&f.Privileges,
+		&f.ColumnComment,
+	}
+
+	if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
+		fields = append(fields, &f.GenerationExpression)
+	}
+	if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
+		fields = append(fields, &f.SrsID)
+	}
+
+	return fields
+}
+
+// FieldNames returns an string array with the table's field names
 func (t *Table) FieldNames() []string {
 	fields := []string{}
 	for _, field := range t.Fields {
@@ -221,7 +259,6 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 	if err != nil {
 		return nil, err
 	}
-	defer rows.Close()
 
 	indexes := make(map[string]Index)
 
@@ -254,6 +291,9 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 			index.Fields = append(index.Fields, i.ColumnName)
 			index.Unique = index.Unique || !i.NonUnique
 		}
+	}
+	if err := rows.Close(); err != nil {
+		return nil, errors.Wrap(err, "Cannot close query rows at getIndexes")
 	}
 
 	return indexes, nil

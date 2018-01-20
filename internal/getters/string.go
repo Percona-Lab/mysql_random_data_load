@@ -40,11 +40,19 @@ func (r *RandomString) Value() interface{} {
 func (r *RandomString) String() string {
 	v := r.Value()
 	if v == nil {
-		return "NULL"
+		return NULL
+	}
+	return v.(string)
+}
+
+func (r *RandomString) Quote() string {
+	v := r.Value()
+	if v == nil {
+		return NULL
 	}
 	return fmt.Sprintf("%q", v)
 }
 
-func NewRandomString(name string, maxSize int64, allowNull bool) Getter {
+func NewRandomString(name string, maxSize int64, allowNull bool) *RandomString {
 	return &RandomString{name, maxSize, allowNull}
 }

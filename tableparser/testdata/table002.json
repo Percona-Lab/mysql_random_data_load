@@ -49,7 +49,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -98,7 +102,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -147,7 +155,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -196,7 +208,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -251,6 +267,10 @@
         "ReferencedTableSchema": "sakila",
         "ReferencedTableName": "language",
         "ReferencedColumnName": "language_id"
+      },
+      "SrsID": {
+        "String": "",
+        "Valid": false
       }
     },
     {
@@ -306,6 +326,10 @@
         "ReferencedTableSchema": "sakila",
         "ReferencedTableName": "language",
         "ReferencedColumnName": "language_id"
+      },
+      "SrsID": {
+        "String": "",
+        "Valid": false
       }
     },
     {
@@ -355,7 +379,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -404,7 +432,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -453,7 +485,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -502,7 +538,11 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -557,7 +597,11 @@
         "R",
         "NC-17"
       ],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -611,7 +655,11 @@
         "Deleted Scenes",
         "Behind the Scenes"
       ],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     },
     {
       "TableCatalog": "def",
@@ -660,91 +708,47 @@
       "ColumnComment": "",
       "GenerationExpression": "",
       "SetEnumVals": [],
-      "Constraint": null
+      "Constraint": null,
+      "SrsID": {
+        "String": "",
+        "Valid": false
+      }
     }
   ],
-  "Indexes": [
-    {
-      "NonUnique": false,
-      "KeyName": "PRIMARY",
-      "SeqInIndex": 1,
-      "ColumnName": "film_id",
-      "Collation": "A",
-      "Cardinality": 1000,
-      "SubPart": {
-        "Int64": 0,
-        "Valid": false
-      },
-      "Packed": {
-        "String": "",
-        "Valid": false
-      },
-      "Null": "",
-      "IndexType": "BTREE",
-      "Comment": "",
-      "IndexComment": ""
+  "Indexes": {
+    "PRIMARY": {
+      "Name": "PRIMARY",
+      "Unique": true,
+      "Fields": [
+        "film_id"
+      ],
+      "Visible": true
     },
-    {
-      "NonUnique": true,
-      "KeyName": "idx_title",
-      "SeqInIndex": 1,
-      "ColumnName": "title",
-      "Collation": "A",
-      "Cardinality": 1000,
-      "SubPart": {
-        "Int64": 0,
-        "Valid": false
-      },
-      "Packed": {
-        "String": "",
-        "Valid": false
-      },
-      "Null": "",
-      "IndexType": "BTREE",
-      "Comment": "",
-      "IndexComment": ""
+    "idx_fk_language_id": {
+      "Name": "idx_fk_language_id",
+      "Unique": false,
+      "Fields": [
+        "language_id"
+      ],
+      "Visible": true
     },
-    {
-      "NonUnique": true,
-      "KeyName": "idx_fk_language_id",
-      "SeqInIndex": 1,
-      "ColumnName": "language_id",
-      "Collation": "A",
-      "Cardinality": 1,
-      "SubPart": {
-        "Int64": 0,
-        "Valid": false
-      },
-      "Packed": {
-        "String": "",
-        "Valid": false
-      },
-      "Null": "",
-      "IndexType": "BTREE",
-      "Comment": "",
-      "IndexComment": ""
+    "idx_fk_original_language_id": {
+      "Name": "idx_fk_original_language_id",
+      "Unique": false,
+      "Fields": [
+        "original_language_id"
+      ],
+      "Visible": true
     },
-    {
-      "NonUnique": true,
-      "KeyName": "idx_fk_original_language_id",
-      "SeqInIndex": 1,
-      "ColumnName": "original_language_id",
-      "Collation": "A",
-      "Cardinality": 1,
-      "SubPart": {
-        "Int64": 0,
-        "Valid": false
-      },
-      "Packed": {
-        "String": "",
-        "Valid": false
-      },
-      "Null": "YES",
-      "IndexType": "BTREE",
-      "Comment": "",
-      "IndexComment": ""
+    "idx_title": {
+      "Name": "idx_title",
+      "Unique": false,
+      "Fields": [
+        "title"
+      ],
+      "Visible": true
     }
-  ],
+  },
   "Constraints": [
     {
       "ConstraintName": "fk_film_language",

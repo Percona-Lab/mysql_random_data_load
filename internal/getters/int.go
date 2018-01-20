@@ -19,7 +19,11 @@ func (r *RandomInt) String() string {
 	return fmt.Sprintf("%d", r.Value())
 }
 
-func NewRandomInt(name string, mask int64, allowNull bool) Getter {
+func (r *RandomInt) Quote() string {
+	return r.String()
+}
+
+func NewRandomInt(name string, mask int64, allowNull bool) *RandomInt {
 	return &RandomInt{name, mask, allowNull}
 }
 
@@ -39,6 +43,10 @@ func (r *RandomIntRange) String() string {
 	return fmt.Sprintf("%d", r.Value())
 }
 
-func NewRandomIntRange(name string, min, max int64, allowNull bool) Getter {
+func (r *RandomIntRange) Quote() string {
+	return r.String()
+}
+
+func NewRandomIntRange(name string, min, max int64, allowNull bool) *RandomIntRange {
 	return &RandomIntRange{name, min, max, allowNull}
 }

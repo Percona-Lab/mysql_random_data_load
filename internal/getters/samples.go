@@ -22,7 +22,15 @@ func (r *RandomSample) Value() interface{} {
 func (r *RandomSample) String() string {
 	v := r.Value()
 	if v == nil {
-		return "NULL"
+		return NULL
+	}
+	return fmt.Sprintf("%v", v)
+}
+
+func (r *RandomSample) Quote() string {
+	v := r.Value()
+	if v == nil {
+		return NULL
 	}
 	switch v.(type) {
 	case string:

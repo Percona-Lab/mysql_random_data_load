@@ -109,13 +109,11 @@ func LoadJson(tb testing.TB, filename string, dest interface{}) {
 	data, err := ioutil.ReadFile(file)
 	if err != nil {
 		fmt.Printf("%s cannot load json file %q: %s\n\n", caller(), file, err)
-		tb.FailNow()
 	}
 
 	err = json.Unmarshal(data, dest)
 	if err != nil {
 		fmt.Printf("%s cannot unmarshal the contents of %q into %T: %s\n\n", caller(), file, dest, err)
-		tb.FailNow()
 	}
 }
 

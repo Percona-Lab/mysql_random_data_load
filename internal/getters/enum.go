@@ -12,7 +12,6 @@ type RandomEnum struct {
 }
 
 func (r *RandomEnum) Value() interface{} {
-	//rand.Seed(time.Now().UnixNano())
 	if r.allowNull && rand.Int63n(100) < nilFrequency {
 		return nil
 	}
@@ -22,11 +21,18 @@ func (r *RandomEnum) Value() interface{} {
 
 func (r *RandomEnum) String() string {
 	if v := r.Value(); v != nil {
+		return v.(string)
+	}
+	return "NULL"
+}
+
+func (r *RandomEnum) Quote() string {
+	if v := r.Value(); v != nil {
 		return fmt.Sprintf("%q", v)
 	}
 	return "NULL"
 }
 
-func NewRandomEnum(allowedValues []string, allowNull bool) Getter {
+func NewRandomEnum(allowedValues []string, allowNull bool) *RandomEnum {
 	return &RandomEnum{allowedValues, allowNull}
 }
