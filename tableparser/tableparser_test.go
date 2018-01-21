@@ -1,7 +1,6 @@
 package tableparser
 
 import (
-	"reflect"
 	"testing"
 	"time"
 
@@ -11,34 +10,21 @@ import (
 	log "github.com/sirupsen/logrus"
 )
 
-func TestParse56(t *testing.T) {
+func TestParse(t *testing.T) {
 	db := tu.GetMySQLConnection(t)
-	v := tu.GetVersion(t, db)
-	v56, _ := version.NewVersion("5.6")
-
-	if v.GreaterThan(v56) {
-		t.Skipf("This test runs under MySQL < 5.7 and version is %s", v.String())
-	}
-
-	table, err := NewTable(db, "sakila", "film")
-	if err != nil {
-		t.Error(err)
-	}
+	v := tu.GetMinorVersion(t, db)
 	var want *Table
-	tu.LoadJson(t, "table001.json", &want)
 
-	if !reflect.DeepEqual(table, want) {
-		t.Error("Table film was not correctly parsed")
+	// Patch part of version is stripped by GetMinorVersion so for these test
+	// it is .0
+	sampleFiles := map[string]string{
+		"5.6.0": "table001.json",
+		"5.7.0": "table002.json",
+		"8.0.0": "table003.json",
 	}
-}
-
-func TestParse57(t *testing.T) {
-	db := tu.GetMySQLConnection(t)
-	v := tu.GetVersion(t, db)
-	v57, _ := version.NewVersion("5.7")
-
-	if v.LessThan(v57) {
-		t.Skipf("This test runs under MySQL 5.7+ and version is %s", v.String())
+	sampleFile, ok := sampleFiles[v.String()]
+	if !ok {
+		t.Fatalf("Unknown MySQL version %s", v.String())
 	}
 
 	table, err := NewTable(db, "sakila", "film")
@@ -46,14 +32,11 @@ func TestParse57(t *testing.T) {
 		t.Error(err)
 	}
 	if tu.UpdateSamples() {
-		tu.WriteJson(t, "table002.json", table)
+		tu.WriteJson(t, sampleFile, table)
 	}
-	var want *Table
-	tu.LoadJson(t, "table002.json", &want)
+	tu.LoadJson(t, sampleFile, &want)
 
-	if !reflect.DeepEqual(table, want) {
-		t.Error("Table film was not correctly parsed")
-	}
+	tu.Equals(t, table, want)
 }
 
 func TestGetIndexes(t *testing.T) {

@@ -1,18 +1,18 @@
 {
   "PRIMARY": {
     "Name": "PRIMARY",
-    "Unique": true,
     "Fields": [
       "actor_id"
     ],
+    "Unique": true,
     "Visible": true
   },
   "idx_fk_film_id": {
     "Name": "idx_fk_film_id",
-    "Unique": false,
     "Fields": [
       "film_id"
     ],
+    "Unique": false,
     "Visible": true
   }
 }

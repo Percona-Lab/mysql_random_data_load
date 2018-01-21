@@ -9,6 +9,7 @@ import (
 	"os/exec"
 	"path/filepath"
 	"reflect"
+	"regexp"
 	"runtime"
 	"strconv"
 	"strings"
@@ -81,6 +82,27 @@ func GetVersion(tb testing.TB, db *sql.DB) *version.Version {
 		fmt.Printf("%s cannot get MySQL version: %s\n\n", caller(), err)
 		tb.FailNow()
 	}
+	v, err := version.NewVersion(vs)
+	if err != nil {
+		fmt.Printf("%s cannot get MySQL version: %s\n\n", caller(), err)
+		tb.FailNow()
+	}
+	return v
+}
+
+func GetMinorVersion(tb testing.TB, db *sql.DB) *version.Version {
+	var vs string
+	err := db.QueryRow("SELECT VERSION()").Scan(&vs)
+	if err != nil {
+		fmt.Printf("%s cannot get MySQL version: %s\n\n", caller(), err)
+		tb.FailNow()
+	}
+
+	// Extract only major and minor version
+	re := regexp.MustCompile(`(\d+)\.(\d+)\.(\d+).*`)
+	m := re.FindAllStringSubmatch(vs, -1)
+	vs = fmt.Sprintf("%s.%s", m[0][1], m[0][2])
+
 	v, err := version.NewVersion(vs)
 	if err != nil {
 		fmt.Printf("%s cannot get MySQL version: %s\n\n", caller(), err)

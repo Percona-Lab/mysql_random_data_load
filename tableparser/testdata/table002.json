@@ -118,7 +118,7 @@
         "String": "",
         "Valid": false
       },
-      "IsNullable": true,
+      "IsNullable": false,
       "DataType": "text",
       "CharacterMaximumLength": {
         "Int64": 65535,
@@ -171,7 +171,7 @@
         "String": "",
         "Valid": false
       },
-      "IsNullable": true,
+      "IsNullable": false,
       "DataType": "year",
       "CharacterMaximumLength": {
         "Int64": 0,
@@ -283,7 +283,7 @@
         "String": "",
         "Valid": false
       },
-      "IsNullable": true,
+      "IsNullable": false,
       "DataType": "tinyint",
       "CharacterMaximumLength": {
         "Int64": 0,
@@ -448,7 +448,7 @@
         "String": "",
         "Valid": false
       },
-      "IsNullable": true,
+      "IsNullable": false,
       "DataType": "smallint",
       "CharacterMaximumLength": {
         "Int64": 0,
@@ -554,7 +554,7 @@
         "String": "G",
         "Valid": true
       },
-      "IsNullable": true,
+      "IsNullable": false,
       "DataType": "enum",
       "CharacterMaximumLength": {
         "Int64": 5,
@@ -613,7 +613,7 @@
         "String": "",
         "Valid": false
       },
-      "IsNullable": true,
+      "IsNullable": false,
       "DataType": "set",
       "CharacterMaximumLength": {
         "Int64": 54,
@@ -718,34 +718,34 @@
   "Indexes": {
     "PRIMARY": {
       "Name": "PRIMARY",
-      "Unique": true,
       "Fields": [
         "film_id"
       ],
+      "Unique": true,
       "Visible": true
     },
     "idx_fk_language_id": {
       "Name": "idx_fk_language_id",
-      "Unique": false,
       "Fields": [
         "language_id"
       ],
+      "Unique": false,
       "Visible": true
     },
     "idx_fk_original_language_id": {
       "Name": "idx_fk_original_language_id",
-      "Unique": false,
       "Fields": [
         "original_language_id"
       ],
+      "Unique": false,
       "Visible": true
     },
     "idx_title": {
       "Name": "idx_title",
-      "Unique": false,
       "Fields": [
         "title"
       ],
+      "Unique": false,
       "Visible": true
     }
   },
