@@ -1,4 +1,5 @@
 # Random data generator for MySQL
+[![Build Status](https://travis-ci.org/Percona-Lab/mysql_random_data_load.svg?branch=master)](https://travis-ci.org/Percona-Lab/mysql_random_data_load)
 
 Many times in my job i need to generate random data for a specific table in order to reproduce an issue.  
 After writing many random generators for every table, I decided to write a random data generator, able to get the table structure and generate random data for it.  
