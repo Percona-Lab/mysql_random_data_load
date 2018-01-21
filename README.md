@@ -1,7 +1,7 @@
 # Random data generator for MySQL
 [![Build Status](https://travis-ci.org/Percona-Lab/mysql_random_data_load.svg?branch=master)](https://travis-ci.org/Percona-Lab/mysql_random_data_load)
 
-Many times in my job i need to generate random data for a specific table in order to reproduce an issue.  
+Many times in my job I need to generate random data for a specific table in order to reproduce an issue.  
 After writing many random generators for every table, I decided to write a random data generator, able to get the table structure and generate random data for it.  
 Plase take into consideration that this is the first version and it doesn't support all field types yet!  
 
@@ -119,7 +119,7 @@ CREATE TABLE `test`.`t3` (
 ```
 To generate 100K random rows, just run:
 ```
-random-data-load test t3 100000 --max-threads=8 --user=root --password=root
+mysql_random-data-load test t3 100000 --user=root --password=root
 ```
 ```
 mysql> select * from t3 limit 1\G
@@ -162,21 +162,18 @@ There are binaries available for each version for Linux and Darwin. You can find
 
 https://github.com/Percona-Lab/mysql_random_data_load/releases
 
-You can copy a link for the binary you want (in this case for 1.0.5), and use wget to download:
-
-```
-cd ~/bin/
-wget https://github.com/Percona-Lab/mysql_random_data_load/releases/download/0.1.5/mysql_random_data_load_linux_amd64
-chmod +x mysql_random_data_load_linux_amd64
-```
-
 ## To do
 - [ ] Add suport for all data types.
 - [X] Add supporrt for foreign keys.
 - [ ] Support config files to override default values/ranges.
 - [ ] Support custom functions via LUA plugins.
 
-## Versions history
+## Version history
+
+#### 0.1.8 
+- Fixed error for triggers created with MySQL 5.6
+- Added Travis-CI
+- Code clean up
 
 #### 0.1.7 
 - Support for MySQL 8.0
