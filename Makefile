@@ -8,7 +8,7 @@ BRANCH ?=$(shell git rev-parse --abbrev-ref HEAD)
 
 PREFIX=$(shell pwd)
 TOP_DIR=$(shell git rev-parse --show-toplevel)
-BIN_DIR=$(shell git rev-parse --show-toplevel)/bin
+BIN_DIR="/tmp/mysql_random_data_load_bin"
 SRC_DIR=$(shell git rev-parse --show-toplevel)/src/go
 LDFLAGS="-X main.Version=${VERSION} -X main.Build=${BUILD} -X main.Commit=${COMMIT} -X main.Branch=${BRANCH} -X main.GoVersion=${GOVERSION} -s -w"
 
