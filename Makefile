@@ -79,6 +79,10 @@ test:
 	@echo ">> running tests"
 	@./runtests.sh
 
+clean-tests:
+	@$(info Cleaning up docker containers used for tests)
+	@docker-compose down
+
 format:
 	@echo ">> formatting code"
 	@$(GO) fmt $(pkgs)

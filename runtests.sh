@@ -1,4 +1,5 @@
 #!/bin/bash
+docker-compose up -d
 wait_mysql() {
     local PORT=$1
     while :
