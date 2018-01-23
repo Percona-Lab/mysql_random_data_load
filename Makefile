@@ -5,6 +5,7 @@ BUILD ?=$(shell date +%FT%T%z)
 GOVERSION ?=$(shell go version | cut --delimiter=" " -f3)
 COMMIT ?=$(shell git rev-parse HEAD)
 BRANCH ?=$(shell git rev-parse --abbrev-ref HEAD)
+GOPATH ?=${HOME}/go
 
 MAKE_TARS = ''
 CUR_DIR=$(shell pwd)
