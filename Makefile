@@ -48,21 +48,18 @@ clean:
 linux-amd64: 
 	@echo "Building linux/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@rm -f ${BIN_DIR}/mysql_random_data_load_linux_amd64.tar.gz
 	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
 	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
 linux-386: 
 	@echo "Building linux/386 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@rm -f ${BIN_DIR}/mysql_random_data_load_linux_386.tar.gz
 	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
 	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
 darwin-amd64: 
 	@echo "Building darwin/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@rm -f ${BIN_DIR}/mysql_random_data_load_darwin_amd64.tar.gz
 	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
 	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
