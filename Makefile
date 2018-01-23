@@ -31,38 +31,45 @@ $(info )
 
 .PHONY: all style format build test vet tarball linux-amd64
 
-default:
+default: prepare
 	@$(info Cleaning old tar files in ${BIN_DIR})
 	@rm -f ${BIN_DIR}/mysql_random_data_load_*.tar.gz
 	@echo
 	@$(info Building in ${BIN_DIR})
 	@go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
 
-all: clean darwin-amd64 linux-amd64
+prepare:
+	@$(info Checking if ${BIN_DIR} exists)
+	@mkdir -p ${BIN_DIR}
 
-clean:
+all: clean darwin-amd64-tar linux-amd64-tar 
+
+clean: prepare
 	@$(info Cleaning binaries and tar.gz files in dir ${BIN_DIR})
 	@rm -f ${BIN_DIR}/mysql_random_data_load
 	@rm -f ${BIN_DIR}/mysql_random_data_load_*.tar.gz
-	$(eval MAKE_TARS="1")
 
-linux-amd64: 
+linux-amd64: prepare
 	@echo "Building linux/amd64 binaries in ${BIN_DIR}"
-	@mkdir -p ${BIN_DIR}
 	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
-	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
-linux-386: 
+linux-amd64-tar: linux-amd64
+	@tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load
+
+linux-386: prepare
 	@echo "Building linux/386 binaries in ${BIN_DIR}"
-	@mkdir -p ${BIN_DIR}
 	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
-	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
+
+linux-386-tar: linux-386
+	@tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_load
 
 darwin-amd64: 
 	@echo "Building darwin/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
 	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
-	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
+
+darwin-amd64-tar: darwin-amd64
+	@tar cvzf ${BIN_DIR}/mysql_random_data_load_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load
 
 style:
 	@echo ">> checking code style"
