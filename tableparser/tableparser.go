@@ -158,7 +158,7 @@ func (t *Table) parse() error {
 	//                           |          |     |
 	re := regexp.MustCompile(`^(.*?)(?:\((.*?)\)(.*))?$`)
 
-	query := "SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ?"
+	query := "SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION"
 
 	constraints := constraintsAsMap(t.Constraints)
 
