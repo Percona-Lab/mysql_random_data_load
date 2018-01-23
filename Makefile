@@ -6,40 +6,65 @@ GOVERSION ?=$(shell go version | cut --delimiter=" " -f3)
 COMMIT ?=$(shell git rev-parse HEAD)
 BRANCH ?=$(shell git rev-parse --abbrev-ref HEAD)
 
-PREFIX=$(shell pwd)
-TOP_DIR=$(shell git rev-parse --show-toplevel)
-BIN_DIR="/tmp/mysql_random_data_load_bin"
-SRC_DIR=$(shell git rev-parse --show-toplevel)/src/go
+MAKE_TARS = ''
+CUR_DIR=$(shell pwd)
+BIN_DIR=${CUR_DIR}/build
 LDFLAGS="-X main.Version=${VERSION} -X main.Build=${BUILD} -X main.Commit=${COMMIT} -X main.Branch=${BRANCH} -X main.GoVersion=${GOVERSION} -s -w"
+
+ifeq (${GOPATH},)
+$(error GOPATH is not set)
+endif
+
+ifeq (,$(wildcard ${GOPATH}/src))
+$(error Invalid GOPATH. There is no src dir in the GOPATH) 
+endif
+
+ifeq ($(findstring ${GOPATH},${CUR_DIR}), )
+$(error Wrong directorry for the project. It must be in $GOPATH/github/Percona-Lab/mysql_random_data_load)
+endif
+
+$(info )
+$(info GOPATH..........: ${GOPATH})
+$(info Build directory.: ${BIN_DIR})
+$(info )
 
 .PHONY: all style format build test vet tarball linux-amd64
 
-all: clean darwin-amd64 linux-amd64 
+default:
+	@$(info Cleaning old tar files in ${BIN_DIR})
+	@rm -f ${BIN_DIR}/mysql_random_data_load_*.tar.gz
+	@echo
+	@$(info Building in ${BIN_DIR})
+	@go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
+
+all: clean darwin-amd64 linux-amd64
 
 clean:
-	@echo "Cleaning binaries dir ${BIN_DIR}"
-	@rm -rf ${BIN_DIR}/ 2> /dev/null
+	@$(info Cleaning binaries and tar.gz files in dir ${BIN_DIR})
+	@rm -f ${BIN_DIR}/mysql_random_data_load
+	@rm -f ${BIN_DIR}/mysql_random_data_load_*.tar.gz
+	$(eval MAKE_TARS="1")
 
 linux-amd64: 
 	@echo "Building linux/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_amd64.tar.gz
-	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader main.go
-	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_loader
+	@rm -f ${BIN_DIR}/mysql_random_data_load_linux_amd64.tar.gz
+	@GOOS=linux GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
+	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
 linux-386: 
 	@echo "Building linux/386 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@rm -f ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz
-	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader main.go
-	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_loader
+	@rm -f ${BIN_DIR}/mysql_random_data_load_linux_386.tar.gz
+	@GOOS=linux GOARCH=386 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
+	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_linux_386.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
 darwin-amd64: 
 	@echo "Building darwin/amd64 binaries in ${BIN_DIR}"
 	@mkdir -p ${BIN_DIR}
-	@rm -f ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz
-	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_loader main.go
-	@tar cvzf ${BIN_DIR}/mysql_random_data_loader_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_loader
+	@rm -f ${BIN_DIR}/mysql_random_data_load_darwin_amd64.tar.gz
+	@GOOS=darwin GOARCH=amd64 go build -ldflags ${LDFLAGS} -o ${BIN_DIR}/mysql_random_data_load main.go
+	@if [ "${MAKE_TARS}" =  "1" ]; then tar cvzf ${BIN_DIR}/mysql_random_data_load_darwin_amd64.tar.gz -C ${BIN_DIR} mysql_random_data_load ;fi
 
 style:
 	@echo ">> checking code style"
