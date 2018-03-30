@@ -211,37 +211,35 @@ func (t *Table) parse() error {
 }
 
 func makeScanRecipients(f *Field, allowNull *string, cols []string) []interface{} {
-	fields := []interface{}{
-		&f.TableCatalog,
-		&f.TableSchema,
-		&f.TableName,
-		&f.ColumnName,
-		&f.OrdinalPosition,
-		&f.ColumnDefault,
-		&allowNull,
-		&f.DataType,
-		&f.CharacterMaximumLength,
-		&f.CharacterOctetLength,
-		&f.NumericPrecision,
-		&f.NumericScale,
-		&f.DatetimePrecision,
-		&f.CharacterSetName,
-		&f.CollationName,
-		&f.ColumnType,
-		&f.ColumnKey,
-		&f.Extra,
-		&f.Privileges,
-		&f.ColumnComment,
-	}
+        fields := []interface{}{
+                &f.TableCatalog,
+                &f.TableSchema,
+                &f.TableName,
+                &f.ColumnName,
+                &f.OrdinalPosition,
+                &f.ColumnDefault,
+                &allowNull,
+                &f.DataType,
+                &f.CharacterMaximumLength,
+                &f.CharacterOctetLength,
+                &f.NumericPrecision,
+                &f.NumericScale,
+        }
 
-	if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
-		fields = append(fields, &f.GenerationExpression)
-	}
-	if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
-		fields = append(fields, &f.SrsID)
-	}
+        if len(cols) > 19 { // MySQL 5.5 does not have "DATETIME_PRECISION" field
+        fields = append(fields, &f.DatetimePrecision)
+        }
 
-	return fields
+        fields = append(fields, &f.CharacterSetName, &f.CollationName, &f.ColumnType, &f.ColumnKey, &f.Extra, &f.Privileges, &f.ColumnComment)
+
+        if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
+                fields = append(fields, &f.GenerationExpression)
+        }
+        if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
+                fields = append(fields, &f.SrsID)
+        }
+
+        return fields
 }
 
 // FieldNames returns an string array with the table's field names
