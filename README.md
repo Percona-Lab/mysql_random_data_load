@@ -27,6 +27,8 @@ This is an early stage project.
 |timestamp|NOW() - 1 year ~ NOW()|
 |time|00:00:00 ~ 23:59:59|
 |year|Current year - 1 ~ current year|
+|tinyblob|up to 100 chars random paragraph|
+|tinytext|up to 100 chars random paragraph|
 |blob|up to 100 chars random paragraph|
 |text|up to 100 chars random paragraph|
 |mediumblob|up to 100 chars random paragraph|
