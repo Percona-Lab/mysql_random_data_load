@@ -392,7 +392,7 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			values = append(values, getters.NewRandomDate(field.ColumnName, field.IsNullable))
 		case "datetime", "timestamp":
 			values = append(values, getters.NewRandomDateTime(field.ColumnName, field.IsNullable))
-		case "blob", "text", "mediumtext", "mediumblob", "longblob", "longtext":
+		case "tinyblob", "tinytext", "blob", "text", "mediumtext", "mediumblob", "longblob", "longtext":
 			values = append(values, getters.NewRandomString(field.ColumnName,
 				field.CharacterMaximumLength.Int64, field.IsNullable))
 		case "time":
@@ -458,8 +458,8 @@ func getSamples(conn *sql.DB, schema, table, field string, samples int64, dataTy
 			var v int64
 			err = rows.Scan(&v)
 			val = v
-		case "char", "varchar", "varbinary", "blob", "text", "mediumtext",
-			"mediumblob", "longblob", "longtext":
+		case "char", "varchar", "varbinary", "tinyblob", "tinytext", "blob", "text",
+			"mediumtext", "mediumblob", "longblob", "longtext":
 			var v string
 			err = rows.Scan(&v)
 			val = v
@@ -508,6 +508,8 @@ func isSupportedType(fieldType string) bool {
 		"timestamp":  true,
 		"time":       true,
 		"year":       true,
+		"tinyblob":   true,
+		"tinytext":   true,
 		"blob":       true,
 		"text":       true,
 		"mediumblob": true,
