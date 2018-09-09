@@ -1,6 +1,7 @@
 package testutils
 
 import (
+	"bufio"
 	"database/sql"
 	"encoding/json"
 	"fmt"
@@ -109,6 +110,47 @@ func GetMinorVersion(tb testing.TB, db *sql.DB) *version.Version {
 		tb.FailNow()
 	}
 	return v
+}
+
+func LoadFile(tb testing.TB, filename string) []string {
+	file := filepath.Join("testdata", filename)
+	fh, err := os.Open(file)
+	lines := []string{}
+	reader := bufio.NewReader(fh)
+
+	line, err := reader.ReadString('\n')
+	for err == nil {
+		lines = append(lines, strings.TrimRight(line, "\n"))
+		line, err = reader.ReadString('\n')
+	}
+	return lines
+}
+
+func UpdateSampleFile(tb testing.TB, filename string, lines []string) {
+	if us, _ := strconv.ParseBool(os.Getenv("UPDATE_SAMPLES")); !us {
+		return
+	}
+	WriteFile(tb, filename, lines)
+}
+
+func UpdateSampleJSON(tb testing.TB, filename string, data interface{}) {
+	if us, _ := strconv.ParseBool(os.Getenv("UPDATE_SAMPLES")); !us {
+		return
+	}
+	WriteJson(tb, filename, data)
+}
+
+func WriteFile(tb testing.TB, filename string, lines []string) {
+	file := filepath.Join("testdata", filename)
+	ofh, err := os.Create(file)
+	if err != nil {
+		fmt.Printf("%s cannot load json file %q: %s\n\n", caller(), file, err)
+		tb.FailNow()
+	}
+	for _, line := range lines {
+		ofh.WriteString(line + "\n")
+	}
+	ofh.Close()
 }
 
 func LoadQueriesFromFile(tb testing.TB, filename string) {

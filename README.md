@@ -170,6 +170,10 @@ https://github.com/Percona-Lab/mysql_random_data_load/releases
 
 ## Version history
 
+#### 0.1.9
+- Added support for bunary and varbinary columns
+- By default, read connection params from ${HOME}/.my.cnf
+
 #### 0.1.8 
 - Fixed error for triggers created with MySQL 5.6
 - Added Travis-CI
