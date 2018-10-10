@@ -116,12 +116,13 @@ func main() {
 	}
 
 	dsn := mysql.Config{
-		User:      *opts.User,
-		Passwd:    *opts.Pass,
-		Addr:      address,
-		Net:       net,
-		DBName:    "",
-		ParseTime: true,
+		User:                 *opts.User,
+		Passwd:               *opts.Pass,
+		Addr:                 address,
+		Net:                  net,
+		DBName:               "",
+		ParseTime:            true,
+		AllowNativePasswords: true,
 	}
 
 	db, err := sql.Open("mysql", dsn.FormatDSN())
