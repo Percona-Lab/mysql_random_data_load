@@ -413,7 +413,7 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			values = append(values, getters.NewRandomDate(field.ColumnName, field.IsNullable))
 		case "datetime", "timestamp":
 			values = append(values, getters.NewRandomDateTime(field.ColumnName, field.IsNullable))
-		case "tinyblob", "tinytext", "blob", "text", "mediumtext", "mediumblob", "longblob", "longtext":
+		case "tinytext", "text", "mediumtext", "longtext":
 			values = append(values, getters.NewRandomString(field.ColumnName,
 				field.CharacterMaximumLength.Int64, field.IsNullable))
 		case "time":
@@ -423,7 +423,7 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 				int64(time.Now().Year()), field.IsNullable))
 		case "enum", "set":
 			values = append(values, getters.NewRandomEnum(field.SetEnumVals, field.IsNullable))
-		case "binary", "varbinary":
+		case "binary", "varbinary", "tinyblob", "blob", "mediumblob", "longblob":
 			values = append(values, getters.NewRandomBinary(field.ColumnName, field.CharacterMaximumLength.Int64, field.IsNullable))
 		default:
 			log.Printf("cannot get field type: %s: %s\n", field.ColumnName, field.DataType)
