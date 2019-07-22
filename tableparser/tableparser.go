@@ -47,10 +47,10 @@ type Table struct {
 
 // Index holds the basic index information
 type Index struct {
-	Name    string
-	Fields  []string
-	Unique  bool
-	Visible bool
+	Name         string
+	Fields       []string
+	Unique       bool
+	Visible      bool
 	Expression   string // MySQL 8.0.16+
 }
 
@@ -264,7 +264,7 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 
 	for rows.Next() {
 		var i IndexField
-		var table, string
+		var table string
 		fields := []interface{}{&table, &i.NonUnique, &i.KeyName, &i.SeqInIndex,
 			&i.ColumnName, &i.Collation, &i.Cardinality, &i.SubPart,
 			&i.Packed, &i.Null, &i.IndexType, &i.Comment, &i.IndexComment,
@@ -287,7 +287,7 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 				Name:       i.KeyName,
 				Unique:     !i.NonUnique,
 				Fields:     []string{i.ColumnName},
-				Visible:    i.Visible == "YES" || visible == "",
+				Visible:    i.Visible == "YES" || i.Visible == "",
 				Expression: i.Expression.String,
 			}
 
