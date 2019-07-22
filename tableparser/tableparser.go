@@ -51,6 +51,7 @@ type Index struct {
 	Fields  []string
 	Unique  bool
 	Visible bool
+	Expression   string // MySQL 8.0.16+
 }
 
 // IndexField holds raw index information as defined in INFORMATION_SCHEMA table
@@ -67,7 +68,8 @@ type IndexField struct {
 	Comment      string
 	IndexComment string
 	NonUnique    bool
-	Visible      bool // MySQL 8.0+
+	Visible      string // MySQL 8.0+
+	Expression   sql.NullString // MySQL 8.0.16+
 }
 
 // Constraint holds Foreign Keys information
@@ -262,15 +264,18 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 
 	for rows.Next() {
 		var i IndexField
-		var table, visible string
+		var table, string
 		fields := []interface{}{&table, &i.NonUnique, &i.KeyName, &i.SeqInIndex,
 			&i.ColumnName, &i.Collation, &i.Cardinality, &i.SubPart,
 			&i.Packed, &i.Null, &i.IndexType, &i.Comment, &i.IndexComment,
 		}
 
 		cols, err := rows.Columns()
-		if err == nil && len(cols) == 14 && cols[13] == "Visible" {
-			fields = append(fields, &visible)
+		if err == nil && len(cols) >= 14 && cols[13] == "Visible" {
+			fields = append(fields, &i.Visible)
+		}
+		if err == nil && len(cols) >= 15 && cols[14] == "Expression" {
+			fields = append(fields, &i.Expression)
 		}
 
 		err = rows.Scan(fields...)
@@ -279,10 +284,11 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 		}
 		if index, ok := indexes[i.KeyName]; !ok {
 			indexes[i.KeyName] = Index{
-				Name:    i.KeyName,
-				Unique:  !i.NonUnique,
-				Fields:  []string{i.ColumnName},
-				Visible: visible == "YES" || visible == "",
+				Name:       i.KeyName,
+				Unique:     !i.NonUnique,
+				Fields:     []string{i.ColumnName},
+				Visible:    i.Visible == "YES" || visible == "",
+				Expression: i.Expression.String,
 			}
 
 		} else {
