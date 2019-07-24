@@ -47,11 +47,11 @@ type Table struct {
 
 // Index holds the basic index information
 type Index struct {
-	Name    string
-	Fields  []string
-	Unique  bool
-	Visible bool
-	Expression   string // MySQL 8.0.16+
+	Name       string
+	Fields     []string
+	Unique     bool
+	Visible    bool
+	Expression string // MySQL 8.0.16+
 }
 
 // IndexField holds raw index information as defined in INFORMATION_SCHEMA table
@@ -68,7 +68,7 @@ type IndexField struct {
 	Comment      string
 	IndexComment string
 	NonUnique    bool
-	Visible      string // MySQL 8.0+
+	Visible      string         // MySQL 8.0+
 	Expression   sql.NullString // MySQL 8.0.16+
 }
 
@@ -213,35 +213,35 @@ func (t *Table) parse() error {
 }
 
 func makeScanRecipients(f *Field, allowNull *string, cols []string) []interface{} {
-        fields := []interface{}{
-                &f.TableCatalog,
-                &f.TableSchema,
-                &f.TableName,
-                &f.ColumnName,
-                &f.OrdinalPosition,
-                &f.ColumnDefault,
-                &allowNull,
-                &f.DataType,
-                &f.CharacterMaximumLength,
-                &f.CharacterOctetLength,
-                &f.NumericPrecision,
-                &f.NumericScale,
-        }
+	fields := []interface{}{
+		&f.TableCatalog,
+		&f.TableSchema,
+		&f.TableName,
+		&f.ColumnName,
+		&f.OrdinalPosition,
+		&f.ColumnDefault,
+		&allowNull,
+		&f.DataType,
+		&f.CharacterMaximumLength,
+		&f.CharacterOctetLength,
+		&f.NumericPrecision,
+		&f.NumericScale,
+	}
 
-        if len(cols) > 19 { // MySQL 5.5 does not have "DATETIME_PRECISION" field
-        fields = append(fields, &f.DatetimePrecision)
-        }
+	if len(cols) > 19 { // MySQL 5.5 does not have "DATETIME_PRECISION" field
+		fields = append(fields, &f.DatetimePrecision)
+	}
 
-        fields = append(fields, &f.CharacterSetName, &f.CollationName, &f.ColumnType, &f.ColumnKey, &f.Extra, &f.Privileges, &f.ColumnComment)
+	fields = append(fields, &f.CharacterSetName, &f.CollationName, &f.ColumnType, &f.ColumnKey, &f.Extra, &f.Privileges, &f.ColumnComment)
 
-        if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
-                fields = append(fields, &f.GenerationExpression)
-        }
-        if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
-                fields = append(fields, &f.SrsID)
-        }
+	if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
+		fields = append(fields, &f.GenerationExpression)
+	}
+	if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
+		fields = append(fields, &f.SrsID)
+	}
 
-        return fields
+	return fields
 }
 
 // FieldNames returns an string array with the table's field names
@@ -264,7 +264,7 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 
 	for rows.Next() {
 		var i IndexField
-		var table, string
+		var table, visible string
 		fields := []interface{}{&table, &i.NonUnique, &i.KeyName, &i.SeqInIndex,
 			&i.ColumnName, &i.Collation, &i.Cardinality, &i.SubPart,
 			&i.Packed, &i.Null, &i.IndexType, &i.Comment, &i.IndexComment,
