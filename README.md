@@ -173,6 +173,10 @@ https://github.com/Percona-Lab/mysql_random_data_load/releases
 ## Version history
 
 #### 0.1.10
+- Fixed argument validations
+- Fixed ~/.my.cnf loading
+
+#### 0.1.10
 - Fixed connection parameters for MySQL 5.7 (set driver's AllowNativePasswords: true)
 
 #### 0.1.9

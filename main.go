@@ -88,6 +88,7 @@ type insertFunction func(*sql.DB, string, chan int, chan bool, *sync.WaitGroup)
 const (
 	defaultMySQLConfigSection = "client"
 	defaultConfigFile         = "~/.my.cnf"
+	defaultBulkSize           = 1000
 )
 
 func main() {
@@ -160,8 +161,17 @@ func main() {
 		}
 	}
 
+	if *opts.Rows < 1 {
+		db.Close() // golint:noerror
+		log.Warnf("Number of rows < 1. There is nothing to do. Exiting")
+		os.Exit(1)
+	}
+
 	if *opts.BulkSize > *opts.Rows {
 		*opts.BulkSize = *opts.Rows
+	}
+	if *opts.BulkSize < 1 {
+		*opts.BulkSize = defaultBulkSize
 	}
 
 	if opts.MaxThreads == nil {
@@ -557,16 +567,16 @@ func processCliParams() (*cliOptions, error) {
 
 	opts := &cliOptions{
 		app:        app,
-		BulkSize:   app.Flag("bulk-size", "Number of rows per insert statement").Default("1000").Int(),
-		ConfigFile: app.Flag("config-file", "MySQL config file").Default(defaultConfigFile).String(),
+		BulkSize:   app.Flag("bulk-size", "Number of rows per insert statement").Default(fmt.Sprintf("%d", defaultBulkSize)).Int(),
+		ConfigFile: app.Flag("config-file", "MySQL config file").Default(expandHomeDir(defaultConfigFile)).String(),
 		Debug:      app.Flag("debug", "Log debugging information").Bool(),
 		Factor:     app.Flag("fk-samples-factor", "Percentage used to get random samples for foreign keys fields").Default("0.3").Float64(),
-		Host:       app.Flag("host", "Host name/IP").Short('h').Default("127.0.0.1").String(),
+		Host:       app.Flag("host", "Host name/IP").Short('h').String(),
 		MaxRetries: app.Flag("max-retries", "Number of rows to insert").Default("100").Int(),
 		MaxThreads: app.Flag("max-threads", "Maximum number of threads to run inserts").Default("1").Int(),
 		NoProgress: app.Flag("no-progress", "Show progress bar").Default("false").Bool(),
 		Pass:       app.Flag("password", "Password").Short('p').String(),
-		Port:       app.Flag("port", "Port").Short('P').Default("3306").Int(),
+		Port:       app.Flag("port", "Port").Short('P').Int(),
 		Print:      app.Flag("print", "Print queries to the standard output instead of inserting them into the db").Bool(),
 		Samples:    app.Flag("max-fk-samples", "Maximum number of samples for foreign keys fields").Default("100").Int64(),
 		User:       app.Flag("user", "User").Short('u').String(),
