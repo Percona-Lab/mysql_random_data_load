@@ -2,7 +2,6 @@ package getters
 
 import (
 	"fmt"
-	"math"
 	"math/rand"
 )
 
@@ -14,7 +13,11 @@ type RandomDecimal struct {
 }
 
 func (r *RandomDecimal) Value() interface{} {
-	f := rand.Float64() * float64(rand.Int63n(int64(math.Pow10(int(r.size)))))
+	size := r.size
+	if size > 10 {
+		size = 10
+	}
+	f := rand.Float64() * float64(rand.Int63n(int64(size)))
 	return f
 }
 
