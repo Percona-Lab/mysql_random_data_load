@@ -83,7 +83,7 @@ type Constraint struct {
 
 // Field holds raw field information as defined in INFORMATION_SCHEMA
 type Field struct {
-	TableCatalog           string
+	TableCatalog           string `db:"TABLE_CATALOG"`
 	TableSchema            string
 	TableName              string
 	ColumnName             string
@@ -124,7 +124,7 @@ type Trigger struct {
 	DatabaseCollation   string
 }
 
-func NewTable(db *sql.DB, schema, tableName string) (*Table, error) {
+func New(db *sql.DB, schema, tableName string) (*Table, error) {
 	table := &Table{
 		Schema: url.QueryEscape(schema),
 		Name:   url.QueryEscape(tableName),
@@ -159,8 +159,32 @@ func (t *Table) parse() error {
 	//                           |          |     +---------- extra info (unsigned, etc)
 	//                           |          |     |
 	re := regexp.MustCompile(`^(.*?)(?:\((.*?)\)(.*))?$`)
+	fields := []string{
+		"TABLE_CATALOG",
+		"TABLE_SCHEMA",
+		"TABLE_NAME",
+		"COLUMN_NAME",
+		"ORDINAL_POSITION",
+		"COLUMN_DEFAULT",
+		"IS_NULLABLE",
+		"DATA_TYPE",
+		"CHARACTER_MAXIMUM_LENGTH",
+		"CHARACTER_OCTET_LENGTH",
+		"NUMERIC_PRECISION",
+		"NUMERIC_SCALE",
+		"CHARACTER_SET_NAME",
+		"COLLATION_NAME",
+		"COLUMN_TYPE",
+		"COLUMN_KEY",
+		"EXTRA",
+		"PRIVILEGES",
+		"COLUMN_COMMENT",
+	}
 
-	query := "SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION"
+	query := "SELECT " + strings.Join(fields, ",") +
+		" FROM `information_schema`.`COLUMNS` " +
+		"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
+		"ORDER BY ORDINAL_POSITION"
 
 	constraints := constraintsAsMap(t.Constraints)
 
@@ -226,19 +250,13 @@ func makeScanRecipients(f *Field, allowNull *string, cols []string) []interface{
 		&f.CharacterOctetLength,
 		&f.NumericPrecision,
 		&f.NumericScale,
-	}
-
-	if len(cols) > 19 { // MySQL 5.5 does not have "DATETIME_PRECISION" field
-		fields = append(fields, &f.DatetimePrecision)
-	}
-
-	fields = append(fields, &f.CharacterSetName, &f.CollationName, &f.ColumnType, &f.ColumnKey, &f.Extra, &f.Privileges, &f.ColumnComment)
-
-	if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
-		fields = append(fields, &f.GenerationExpression)
-	}
-	if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
-		fields = append(fields, &f.SrsID)
+		&f.CharacterSetName,
+		&f.CollationName,
+		&f.ColumnType,
+		&f.ColumnKey,
+		&f.Extra,
+		&f.Privileges,
+		&f.ColumnComment,
 	}
 
 	return fields

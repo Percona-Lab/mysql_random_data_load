@@ -1,11 +1,11 @@
 package getters
 
 // All types defined here satisfy the Getter interface
-// type Getter interface {
-// 	   Value()  interface{}
-//     Quote()  string
-// 	   String() string
-// }
+type Getter interface {
+	Value() interface{}
+	Quote() string
+	String() string
+}
 
 const (
 	nilFrequency = 10
