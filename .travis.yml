@@ -14,7 +14,7 @@ matrix:
         - go get -u github.com/golang/dep/cmd/dep
         - dep ensure
         - docker pull mysql:5.7
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.7 --innodb_log_file_size=256MB 
+        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=msandbox -e MYSQL_PASSWORD=msandbox mysql:5.7 --innodb_log_file_size=256MB 
           --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
         - cp .travis/docker.cnf ~/.my.cnf
@@ -34,7 +34,7 @@ matrix:
         - go get -u github.com/golang/dep/cmd/dep
         - dep ensure
         - docker pull mysql:5.6
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:5.6
+        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=msandbox -e MYSQL_PASSWORD=msandbox mysql:5.6
           --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
         - cp .travis/docker.cnf ~/.my.cnf

@@ -691,7 +691,7 @@
       },
       "DatetimePrecision": {
         "Int64": 0,
-        "Valid": true
+        "Valid": false
       },
       "CharacterSetName": {
         "String": "",
@@ -722,7 +722,8 @@
         "film_id"
       ],
       "Unique": true,
-      "Visible": true
+      "Visible": true,
+      "Expression": ""
     },
     "idx_fk_language_id": {
       "Name": "idx_fk_language_id",
@@ -730,7 +731,8 @@
         "language_id"
       ],
       "Unique": false,
-      "Visible": true
+      "Visible": true,
+      "Expression": ""
     },
     "idx_fk_original_language_id": {
       "Name": "idx_fk_original_language_id",
@@ -738,7 +740,8 @@
         "original_language_id"
       ],
       "Unique": false,
-      "Visible": true
+      "Visible": true,
+      "Expression": ""
     },
     "idx_title": {
       "Name": "idx_title",
@@ -746,7 +749,8 @@
         "title"
       ],
       "Unique": false,
-      "Visible": true
+      "Visible": true,
+      "Expression": ""
     }
   },
   "Constraints": [

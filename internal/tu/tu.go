@@ -45,7 +45,7 @@ func GetMySQLConnection(tb testing.TB) *sql.DB {
 
 	dsn := os.Getenv("TEST_DSN")
 	if dsn == "" {
-		dsn = "msandbox:msandbox@tcp(127.0.0.1)/"
+		dsn = "msandbox:msandbox@tcp(127.0.0.1:3306)/sakila"
 	}
 
 	// Parse the DSN in the env var and ensure it has parseTime & multiStatements enabled
