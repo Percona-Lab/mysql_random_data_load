@@ -25,3 +25,5 @@ jobs:
     # Runs a single command using the runners shell
     - name: Run golangci-lint with reviewdog
       uses: reviewdog/action-golangci-lint@v1.1.3
+      with: 
+        github_token: ${{ secrets.github_token }}
