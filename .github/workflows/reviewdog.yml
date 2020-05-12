@@ -13,7 +13,7 @@ jobs:
         run: |
             mkdir -p /home/runner/go/bin
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
-            dep ensure
+            /home/runner/go/bin/dep ensure
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v1
         with:
