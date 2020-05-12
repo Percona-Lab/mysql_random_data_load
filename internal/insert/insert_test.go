@@ -12,7 +12,7 @@ func TestBasic(t *testing.T) {
 	db := tu.GetMySQLConnection(t)
 	tu.LoadQueriesFromFile(t, "child.sql")
 
-	table, err := tableparser.NewTable(db, "test", "parent")
+	table, err := tableparser.New(db, "test", "parent")
 	assert.NoError(t, err)
 
 	i := New(db, table)

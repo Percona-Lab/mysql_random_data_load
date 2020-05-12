@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	tu "github.com/Percona-Lab/mysql_random_data_load/testutils"
+	"github.com/Percona-Lab/mysql_random_data_load/internal/tu"
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
 	log "github.com/sirupsen/logrus"
@@ -27,7 +27,7 @@ func TestParse(t *testing.T) {
 		t.Fatalf("Unknown MySQL version %s", v.String())
 	}
 
-	table, err := NewTable(db, "sakila", "film")
+	table, err := New(db, "sakila", "film")
 	if err != nil {
 		t.Error(err)
 	}

@@ -5,7 +5,7 @@ import (
 	"math/rand"
 	"regexp"
 
-	"github.com/brianvoe/gofakeit/v5"
+	"github.com/brianvoe/gofakeit"
 )
 
 // RandomString getter
@@ -90,7 +90,9 @@ func NewRandomString(name string, maxSize int64, allowNull bool) *RandomString {
 	case ipAddressRe.MatchString(name):
 		fn = gofakeit.IPv4Address
 	default:
-		fn = gofakeit.LoremIpsumWord
+		fn = func() string {
+			return gofakeit.Paragraph(10, 10, 10, " ")
+		}
 	}
 
 	return &RandomString{name, uint64(maxSize), allowNull, fn}

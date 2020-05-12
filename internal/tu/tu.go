@@ -45,9 +45,7 @@ func GetMySQLConnection(tb testing.TB) *sql.DB {
 
 	dsn := os.Getenv("TEST_DSN")
 	if dsn == "" {
-		dsn = "root:@tcp(127.0.0.1)/"
-		// fmt.Printf("%s TEST_DSN environment variable is empty", caller())
-		// tb.FailNow()
+		dsn = "msandbox:msandbox@tcp(127.0.0.1)/"
 	}
 
 	// Parse the DSN in the env var and ensure it has parseTime & multiStatements enabled
