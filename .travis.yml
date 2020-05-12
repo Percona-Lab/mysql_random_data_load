@@ -3,30 +3,10 @@ language: go
 
 matrix:
   include:
-    - env: DB=MYSQL8.0
-      sudo: required
-      dist: trusty
-      go: 1.9.x
-      services:
-        - docker
-      before_install:
-        - go get golang.org/x/tools/cmd/cover
-        - go get -u github.com/golang/dep/cmd/dep
-        - dep ensure
-        - docker pull mysql:8.0
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_ALLOW_EMPTY_PASSWORD=yes mysql:8.0 --innodb_log_file_size=256MB 
-          --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
-        - sleep 30
-        - cp .travis/docker.cnf ~/.my.cnf
-        - .travis/wait_mysql.sh
-        - mysql < testdata/schema/sakila.sql
-      before_script:
-        - export TEST_DSN="root:@tcp(127.0.0.1:3307)/sakila?parseTime=true"
-
     - env: DB=MYSQL5.7
       sudo: required
       dist: trusty
-      go: 1.9.x
+      go: 1.14.x
       services:
         - docker
       before_install:
@@ -46,7 +26,7 @@ matrix:
     - env: DB=MYSQL5.6
       sudo: required
       dist: trusty
-      go: 1.9.x
+      go: 1.14.x
       services:
         - docker
       before_install:
