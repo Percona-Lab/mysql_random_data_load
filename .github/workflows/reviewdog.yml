@@ -11,6 +11,7 @@ jobs:
         uses: actions/checkout@v1
       - name: Get dependencies
         run: |
+            mkdir -p /home/runner/go/bin
             curl https://raw.githubusercontent.com/golang/dep/master/install.sh | sh
             dep ensure
       - name: golangci-lint
