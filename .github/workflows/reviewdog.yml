@@ -6,7 +6,6 @@ jobs:
   golangci-lint:
     name: runner / golangci-lint
     runs-on: ubuntu-latest
-    working-directory: /go/src/
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
