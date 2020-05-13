@@ -49,5 +49,3 @@ install:
 
 script:
   - go test -v -race ./...
-
-- reviewdog -reporter=github-pr-check
