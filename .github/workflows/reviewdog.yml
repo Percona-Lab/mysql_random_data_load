@@ -5,7 +5,7 @@ on: [pull_request]
 jobs:
   golangci-lint:
     name: runner / golangci-lint
-    runs-on: golang-latest
+    runs-on: golang
     steps:
       - name: Check out code into the Go module directory
         uses: actions/checkout@v1
