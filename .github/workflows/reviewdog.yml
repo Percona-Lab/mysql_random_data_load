@@ -6,8 +6,10 @@ jobs:
   golangci-lint:
     name: runner / golangci-lint
     steps:
+      - name: Install Go
+        uses: actions/setup-go@v2
       - name: Check out code into the Go module directory
-        uses: actions/checkout@v1
+        uses: actions/checkout@v2
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v1
         with:
