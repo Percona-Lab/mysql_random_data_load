@@ -43,5 +43,11 @@ matrix:
       before_script:
           - export TEST_DSN="msandbox:msandbox@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
+install:
+  - mkdir -p ~/bin/ && export PATH="~/bin/:$PATH"
+  - curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b ~/bin
+
 script:
   - go test -v -race ./...
+
+- reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
