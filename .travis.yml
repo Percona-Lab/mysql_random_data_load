@@ -50,4 +50,4 @@ install:
 script:
   - go test -v -race ./...
 
-- reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
+- reviewdog -reporter=github-pr-check
