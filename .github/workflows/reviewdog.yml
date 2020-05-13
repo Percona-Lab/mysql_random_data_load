@@ -6,11 +6,14 @@ jobs:
   golangci-lint:
     name: runner / golangci-lint
     runs-on: ubuntu-latest
+    working-directory: /go/src/
     steps:
       - name: Install Go
         uses: actions/setup-go@v2
       - name: Check out code into the Go module directory
         uses: actions/checkout@v2
+        with:
+        path: ./src/github.com/${{ github.repository }}
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v1
         with:
