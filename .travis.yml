@@ -28,7 +28,6 @@ install:
   - curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b ~/bin
 
 script:
-  - go test -v -race ./...
   - ~/bin/reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
 
 after_success:
