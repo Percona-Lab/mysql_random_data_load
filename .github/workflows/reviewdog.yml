@@ -16,4 +16,5 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo $(pwd)
+          ls
           reviewdog -reporter=github-pr-check -runners=golint,govet -conf=.reviewdog.yml
