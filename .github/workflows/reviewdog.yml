@@ -22,3 +22,4 @@ jobs:
           path: ./src/github.com/${{ github.repository }}
           github_token: ${{ secrets.github_token }}
           reviewdog_flags: -reporter=github-check
+          golangci_lint_flags: ./src/github.com/${{ github.repository }}
