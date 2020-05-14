@@ -27,7 +27,7 @@ install:
   - curl -sSfL https://raw.githubusercontent.com/golangci/golangci-lint/master/install.sh | sh -s -- -b ~/bin/ v1.25.1
 
 script:
-    - ~/bin/golangci-lint run --out-format=line-number | ~/bin/reviewdog -f=golangci-lint -level=error -reporter=github-pr-check -name='Required checks'
+    - ~/bin/golangci-lint run --out-format=line-number | ~/bin/reviewdog -f=golangci-lint -level=error -reporter=github-check -name='Required checks'
 #  - ~/bin/reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
 
 after_success:
