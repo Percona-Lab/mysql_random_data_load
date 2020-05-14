@@ -49,3 +49,6 @@ install:
 
 script:
   - go test -v -race ./...
+
+after_success:
+  - ~/bin/reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
