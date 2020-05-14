@@ -18,8 +18,7 @@ jobs:
             path: ./src/github.com/${{ github.repository }}
       - name: golangci-lint
         uses: reviewdog/action-golangci-lint@v1
-        working-directory: ./src/github.com/${{ github.repository }}
         with:
-#         path: ./src/github.com/${{ github.repository }}
+          path: ./src/github.com/${{ github.repository }}
           github_token: ${{ secrets.github_token }}
           reviewdog_flags: -reporter=github-check
