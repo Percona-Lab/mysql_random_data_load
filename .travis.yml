@@ -23,32 +23,12 @@ matrix:
       before_script:
           - export TEST_DSN="msandbox:msandbox@tcp(127.0.0.1:3307)/sakila?parseTime=true"
 
-    - env: DB=MYSQL5.6
-      sudo: required
-      dist: trusty
-      go: 1.13.x
-      services:
-        - docker
-      before_install:
-        - go get golang.org/x/tools/cmd/cover
-        - go get -u github.com/golang/dep/cmd/dep
-        - dep ensure
-        - docker pull mysql:5.6
-        - docker run -d -p 127.0.0.1:3307:3306 --name mysqld -e MYSQL_USER=msandbox -e MYSQL_PASSWORD=msandbox mysql:5.6
-          --innodb_log_file_size=256MB --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
-        - sleep 30
-        - cp .travis/docker.cnf ~/.my.cnf
-        - .travis/wait_mysql.sh
-        - mysql < testdata/schema/sakila.sql
-      before_script:
-          - export TEST_DSN="msandbox:msandbox@tcp(127.0.0.1:3307)/sakila?parseTime=true"
-
 install:
   - mkdir -p ~/bin/ && export PATH="~/bin/:$PATH"
   - curl -sfL https://raw.githubusercontent.com/reviewdog/reviewdog/master/install.sh| sh -s -- -b ~/bin
 
 script:
   - go test -v -race ./...
+  - ~/bin/reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
 
 after_success:
-  - ~/bin/reviewdog -conf=.reviewdog.yml -reporter=github-pr-check
