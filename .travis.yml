@@ -18,7 +18,6 @@ matrix:
           --innodb_buffer_pool_size=512MB --max_allowed_packet=16MB
         - sleep 30
         - cp .travis/docker.cnf ~/.my.cnf
-        - .travis/wait_mysql.sh
         - mysql < testdata/schema/sakila.sql
       before_script:
           - export TEST_DSN="msandbox:msandbox@tcp(127.0.0.1:3307)/sakila?parseTime=true"
