@@ -16,5 +16,5 @@ jobs:
           REVIEWDOG_GITHUB_API_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           echo $(pwd)
-          ls
+          cd src/github.com/Percona-Lab/mysql_random_data_load
           reviewdog -reporter=github-pr-check -runners=golint,govet -conf=.reviewdog.yml
