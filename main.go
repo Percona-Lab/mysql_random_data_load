@@ -197,7 +197,7 @@ func main() {
 	count := *opts.Rows / *opts.BulkSize
 	remainder := *opts.Rows - count**opts.BulkSize
 	semaphores := makeSemaphores(*opts.MaxThreads)
-	rowValues := makeValueFuncs(db, table.Fields)
+	rowValues := makeValueFuncs(db, table.Fields, *opts.Samples)
 	log.Debugf("Must run %d bulk inserts having %d rows each", count, *opts.BulkSize)
 
 	runInsertFunc := runInsert
@@ -388,7 +388,7 @@ func runInsert(db *sql.DB, insertQuery string, resultsChan chan int, sem chan bo
 }
 
 // makeValueFuncs returns an array of functions to generate all the values needed for a single row
-func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
+func makeValueFuncs(conn *sql.DB, fields []tableparser.Field, samples int64) insertValues {
 	var values []getter
 	for _, field := range fields {
 		if !field.IsNullable && field.ColumnKey == "PRI" && strings.Contains(field.Extra, "auto_increment") {
@@ -398,7 +398,7 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			samples, err := getSamples(conn, field.Constraint.ReferencedTableSchema,
 				field.Constraint.ReferencedTableName,
 				field.Constraint.ReferencedColumnName,
-				100, field.DataType)
+				samples, field.DataType)
 			if err != nil {
 				log.Printf("cannot get samples for field %q: %s\n", field.ColumnName, err)
 				continue
