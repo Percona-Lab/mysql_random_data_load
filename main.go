@@ -435,6 +435,8 @@ func makeValueFuncs(conn *sql.DB, fields []tableparser.Field) insertValues {
 			values = append(values, getters.NewRandomEnum(field.SetEnumVals, field.IsNullable))
 		case "binary", "varbinary":
 			values = append(values, getters.NewRandomBinary(field.ColumnName, field.CharacterMaximumLength.Int64, field.IsNullable))
+		case "json":
+			values = append(values, getters.NewRandomJson(field.ColumnName, field.IsNullable))
 		default:
 			log.Printf("cannot get field type: %s: %s\n", field.ColumnName, field.DataType)
 		}
@@ -492,7 +494,7 @@ func getSamples(conn *sql.DB, schema, table, field string, samples int64, dataTy
 			err = rows.Scan(&v)
 			val = v
 		case "char", "varchar", "blob", "text", "mediumtext",
-			"mediumblob", "longblob", "longtext":
+			"mediumblob", "longblob", "longtext", "json":
 			var v string
 			err = rows.Scan(&v)
 			val = v
@@ -557,6 +559,7 @@ func isSupportedType(fieldType string) bool {
 		"varbinary":  true,
 		"enum":       true,
 		"set":        true,
+		"json":		    true,
 	}
 	_, ok := supportedTypes[fieldType]
 	return ok
