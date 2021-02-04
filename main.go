@@ -559,7 +559,7 @@ func isSupportedType(fieldType string) bool {
 		"varbinary":  true,
 		"enum":       true,
 		"set":        true,
-		"json":		    true,
+		"json":       true,
 	}
 	_, ok := supportedTypes[fieldType]
 	return ok
