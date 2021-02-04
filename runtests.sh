@@ -5,7 +5,7 @@ wait_mysql() {
     while :
     do
         sleep 3
-        if mysql -P ${PORT} -e 'select version()' &>/dev/null; then
+        if mysql -u root -P ${PORT} -e 'select version()' &>/dev/null; then
             break
         fi
     done
@@ -19,4 +19,3 @@ for PORT in 3306 3307 3308; do
     export TEST_DSN="root:@tcp(127.1:${PORT})/sakila?parseTime=true"
     go test -v ./...
 done
-

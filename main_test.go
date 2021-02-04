@@ -24,12 +24,13 @@ func TestGetSamples(t *testing.T) {
 }
 
 func TestGenerateInsertData(t *testing.T) {
-	wantRows := 3
+	wantRows := 4
 
 	values := []getter{
 		getters.NewRandomInt("f1", 100, false),
 		getters.NewRandomString("f2", 10, false),
 		getters.NewRandomDate("f3", false),
+		getters.NewRandomJson("f4", false),
 	}
 
 	rowsChan := make(chan []getter, 100)
@@ -56,6 +57,10 @@ func TestGenerateInsertData(t *testing.T) {
 					fmt.Printf("Expected '*getters.RandomDate' for field [2], got %q\n", reflect.TypeOf(row[2]).String())
 					t.Fail()
 				}
+				if reflect.TypeOf(row[3]).String() != "*getters.RandomJson" {
+					fmt.Printf("Expected '*getters.RandomJson' for field [3], got %q\n", reflect.TypeOf(row[3]).String())
+					t.Fail()
+				}
 				count++
 			}
 		}
@@ -64,7 +69,7 @@ func TestGenerateInsertData(t *testing.T) {
 	generateInsertData(wantRows, values, rowsChan)
 
 	wg.Wait()
-	tu.Assert(t, count == 3, "Invalid number of rows")
+	tu.Assert(t, count == 4, "Invalid number of rows")
 }
 
 func TestGenerateInsertStmt(t *testing.T) {
