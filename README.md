@@ -121,7 +121,7 @@ CREATE TABLE `test`.`t3` (
 ```
 To generate 100K random rows, just run:
 ```
-mysql_random-data-load test t3 100000 --user=root --password=root
+mysql_random_data_load test t3 100000 --user=root --password=root
 ```
 ```
 mysql> select * from t3 limit 1\G
