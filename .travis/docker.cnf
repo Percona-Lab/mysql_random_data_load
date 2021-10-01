@@ -1,4 +1,5 @@
 [client]
-user = root
+user = msandbox
+password=msandbox
 host = 127.0.0.1
 port = 3307

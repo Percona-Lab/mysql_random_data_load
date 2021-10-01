@@ -5,7 +5,8 @@
       "actor_id"
     ],
     "Unique": true,
-    "Visible": true
+    "Visible": true,
+    "Expression": ""
   },
   "idx_fk_film_id": {
     "Name": "idx_fk_film_id",
@@ -13,6 +14,7 @@
       "film_id"
     ],
     "Unique": false,
-    "Visible": true
+    "Visible": true,
+    "Expression": ""
   }
 }

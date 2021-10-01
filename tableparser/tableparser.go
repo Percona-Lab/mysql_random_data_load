@@ -70,6 +70,7 @@ type IndexField struct {
 	NonUnique    bool
 	Visible      string         // MySQL 8.0+
 	Expression   sql.NullString // MySQL 8.0.16+
+	Clustered    string         // TiDB Support
 }
 
 // Constraint holds Foreign Keys information
@@ -83,7 +84,7 @@ type Constraint struct {
 
 // Field holds raw field information as defined in INFORMATION_SCHEMA
 type Field struct {
-	TableCatalog           string
+	TableCatalog           string `db:"TABLE_CATALOG"`
 	TableSchema            string
 	TableName              string
 	ColumnName             string
@@ -124,7 +125,7 @@ type Trigger struct {
 	DatabaseCollation   string
 }
 
-func NewTable(db *sql.DB, schema, tableName string) (*Table, error) {
+func New(db *sql.DB, schema, tableName string) (*Table, error) {
 	table := &Table{
 		Schema: url.QueryEscape(schema),
 		Name:   url.QueryEscape(tableName),
@@ -136,7 +137,9 @@ func NewTable(db *sql.DB, schema, tableName string) (*Table, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	table.Constraints, err = getConstraints(db, table.Schema, table.Name)
+
 	if err != nil {
 		return nil, err
 	}
@@ -159,8 +162,32 @@ func (t *Table) parse() error {
 	//                           |          |     +---------- extra info (unsigned, etc)
 	//                           |          |     |
 	re := regexp.MustCompile(`^(.*?)(?:\((.*?)\)(.*))?$`)
+	fields := []string{
+		"TABLE_CATALOG",
+		"TABLE_SCHEMA",
+		"TABLE_NAME",
+		"COLUMN_NAME",
+		"ORDINAL_POSITION",
+		"COLUMN_DEFAULT",
+		"IS_NULLABLE",
+		"DATA_TYPE",
+		"CHARACTER_MAXIMUM_LENGTH",
+		"CHARACTER_OCTET_LENGTH",
+		"NUMERIC_PRECISION",
+		"NUMERIC_SCALE",
+		"CHARACTER_SET_NAME",
+		"COLLATION_NAME",
+		"COLUMN_TYPE",
+		"COLUMN_KEY",
+		"EXTRA",
+		"PRIVILEGES",
+		"COLUMN_COMMENT",
+	}
 
-	query := "SELECT * FROM `information_schema`.`COLUMNS` WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? ORDER BY ORDINAL_POSITION"
+	query := "SELECT " + strings.Join(fields, ",") +
+		" FROM `information_schema`.`COLUMNS` " +
+		"WHERE TABLE_SCHEMA = ? AND TABLE_NAME = ? " +
+		"ORDER BY ORDINAL_POSITION"
 
 	constraints := constraintsAsMap(t.Constraints)
 
@@ -226,19 +253,13 @@ func makeScanRecipients(f *Field, allowNull *string, cols []string) []interface{
 		&f.CharacterOctetLength,
 		&f.NumericPrecision,
 		&f.NumericScale,
-	}
-
-	if len(cols) > 19 { // MySQL 5.5 does not have "DATETIME_PRECISION" field
-		fields = append(fields, &f.DatetimePrecision)
-	}
-
-	fields = append(fields, &f.CharacterSetName, &f.CollationName, &f.ColumnType, &f.ColumnKey, &f.Extra, &f.Privileges, &f.ColumnComment)
-
-	if len(cols) > 20 && cols[20] == "GENERATION_EXPRESSION" { // MySQL 5.7+ "GENERATION_EXPRESSION" field
-		fields = append(fields, &f.GenerationExpression)
-	}
-	if len(cols) > 21 && cols[21] == "SRS_ID" { // MySQL 8.0+ "SRS ID" field
-		fields = append(fields, &f.SrsID)
+		&f.CharacterSetName,
+		&f.CollationName,
+		&f.ColumnType,
+		&f.ColumnKey,
+		&f.Extra,
+		&f.Privileges,
+		&f.ColumnComment,
 	}
 
 	return fields
@@ -276,6 +297,10 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 		}
 		if err == nil && len(cols) >= 15 && cols[14] == "Expression" {
 			fields = append(fields, &i.Expression)
+		}
+		// support for TiDB (Clustered Index)
+		if err == nil && len(cols) >= 16 && cols[15] == "Clustered" {
+			fields = append(fields, &i.Clustered)
 		}
 
 		err = rows.Scan(fields...)
