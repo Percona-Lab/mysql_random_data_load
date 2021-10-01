@@ -70,6 +70,7 @@ type IndexField struct {
 	NonUnique    bool
 	Visible      string         // MySQL 8.0+
 	Expression   sql.NullString // MySQL 8.0.16+
+	Clustered    string         // TiDB Support
 }
 
 // Constraint holds Foreign Keys information
@@ -136,7 +137,9 @@ func New(db *sql.DB, schema, tableName string) (*Table, error) {
 	if err != nil {
 		return nil, err
 	}
+
 	table.Constraints, err = getConstraints(db, table.Schema, table.Name)
+
 	if err != nil {
 		return nil, err
 	}
@@ -294,6 +297,10 @@ func getIndexes(db *sql.DB, schema, tableName string) (map[string]Index, error) 
 		}
 		if err == nil && len(cols) >= 15 && cols[14] == "Expression" {
 			fields = append(fields, &i.Expression)
+		}
+		// support for TiDB (Clustered Index)
+		if err == nil && len(cols) >= 16 && cols[15] == "Clustered" {
+			fields = append(fields, &i.Clustered)
 		}
 
 		err = rows.Scan(fields...)
