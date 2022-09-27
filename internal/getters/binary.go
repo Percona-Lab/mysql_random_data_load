@@ -33,13 +33,13 @@ func (r *RandomBinary) Value() interface{} {
 	}
   
 	if len(s) < int(maxSize) {
-    extraData := make([]byte, int(maxSize)-len(s))
-    rand.Read(extraData)
-    return append([]byte(s), extraData...)
-  } else {
-    s = s[:int(maxSize)]
-    return s
-  }
+		extraData := make([]byte, int(maxSize)-len(s))
+		rand.Read(extraData)
+		return append([]byte(s), extraData...)
+	} else {
+		s = s[:int(maxSize)]
+		return s
+	}
 }
 
 func (r *RandomBinary) String() string {
