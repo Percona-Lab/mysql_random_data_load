@@ -35,6 +35,7 @@ type cliOptions struct {
 	Debug      *bool
 	Factor     *float64
 	Host       *string
+	Socket     *string
 	MaxRetries *int
 	MaxThreads *int
 	NoProgress *bool
@@ -50,7 +51,7 @@ type mysqlOptions struct {
 	Host     string
 	Password string
 	Port     int
-	Sock     string
+	Socket   string
 	User     string
 }
 
@@ -59,7 +60,7 @@ var (
 
 	validFunctions = []string{"int", "string", "date", "date_in_range"}
 	maxValues      = map[string]int64{
-		"tinyint":   0XF,
+		"tinyint":   0xF,
 		"smallint":  0xFF,
 		"mediumint": 0x7FFFF,
 		"int":       0x7FFFFFFF,
@@ -107,13 +108,19 @@ func main() {
 		return
 	}
 
-	address := *opts.Host
-	net := "unix"
-	if address != "localhost" {
+	var (
+		address string
+		net     string
+	)
+	if *opts.Socket != "" {
+		net = "unix"
+		address = *opts.Socket
+	} else {
 		net = "tcp"
-	}
-	if *opts.Port != 0 {
-		address = fmt.Sprintf("%s:%d", address, *opts.Port)
+		address = *opts.Host
+		if *opts.Port != 0 {
+			address = fmt.Sprintf("%s:%d", address, *opts.Port)
+		}
 	}
 
 	dsn := mysql.Config{
@@ -572,6 +579,7 @@ func processCliParams() (*cliOptions, error) {
 		Debug:      app.Flag("debug", "Log debugging information").Bool(),
 		Factor:     app.Flag("fk-samples-factor", "Percentage used to get random samples for foreign keys fields").Default("0.3").Float64(),
 		Host:       app.Flag("host", "Host name/IP").Short('h').String(),
+		Socket:     app.Flag("socket", "mysql socket/Path").Short('s').String(),
 		MaxRetries: app.Flag("max-retries", "Number of rows to insert").Default("100").Int(),
 		MaxThreads: app.Flag("max-threads", "Maximum number of threads to run inserts").Default("1").Int(),
 		NoProgress: app.Flag("no-progress", "Show progress bar").Default("false").Bool(),
@@ -604,6 +612,10 @@ func checkMySQLParams(opts *cliOptions, mysqlOpts *mysqlOptions) {
 		*opts.Host = mysqlOpts.Host
 	}
 
+	if *opts.Socket == "" && mysqlOpts.Socket != "" {
+		*opts.Socket = mysqlOpts.Socket
+	}
+
 	if *opts.Port == 0 && mysqlOpts.Port != 0 {
 		*opts.Port = mysqlOpts.Port
 	}
@@ -628,6 +640,7 @@ func readMySQLConfigFile(filename string) (*mysqlOptions, error) {
 
 	mysqlOpts := &mysqlOptions{
 		Host:     section.Key("host").String(),
+		Socket:   section.Key("socket").String(),
 		Port:     port,
 		User:     section.Key("user").String(),
 		Password: section.Key("password").String(),
