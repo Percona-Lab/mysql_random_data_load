@@ -121,7 +121,7 @@ CREATE TABLE `test`.`t3` (
 ```
 To generate 100K random rows, just run:
 ```
-mysql_random-data-load test t3 100000 --user=root --password=root
+mysql_random_data_load test t3 100000 --user=root --password=root
 ```
 ```
 mysql> select * from t3 limit 1\G
@@ -171,6 +171,10 @@ https://github.com/Percona-Lab/mysql_random_data_load/releases
 - [ ] Support custom functions via LUA plugins.
 
 ## Version history
+
+#### 0.1.10
+- Fixed argument validations
+- Fixed ~/.my.cnf loading
 
 #### 0.1.10
 - Fixed connection parameters for MySQL 5.7 (set driver's AllowNativePasswords: true)

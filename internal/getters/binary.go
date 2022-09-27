@@ -3,9 +3,11 @@ package getters
 import (
 	"fmt"
 	"math/rand"
+
+	"github.com/icrowley/fake"
 )
 
-// RandomString getter
+// RandomBinary getter
 type RandomBinary struct {
 	name      string
 	maxSize   int64
@@ -16,15 +18,28 @@ func (r *RandomBinary) Value() interface{} {
 	if r.allowNull && rand.Int63n(100) < nilFrequency {
 		return nil
 	}
+	var s string
 	maxSize := uint64(r.maxSize)
 	if maxSize == 0 {
 		maxSize = uint64(rand.Int63n(100))
 	}
 
-	data := make([]byte, maxSize)
-	rand.Read(data)
-
-	return data
+	if maxSize <= 10 {
+		s = fake.FirstName()
+	} else if maxSize < 30 {
+		s = fake.FullName()
+	} else {
+		s = fake.Sentence()
+	}
+  
+	if len(s) < int(maxSize) {
+    extraData := make([]byte, int(maxSize)-len(s))
+    rand.Read(extraData)
+    return append([]byte(s), extraData...)
+  } else {
+    s = s[:int(maxSize)]
+    return s
+  }
 }
 
 func (r *RandomBinary) String() string {
