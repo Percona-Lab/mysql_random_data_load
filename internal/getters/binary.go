@@ -31,10 +31,15 @@ func (r *RandomBinary) Value() interface{} {
 	} else {
 		s = fake.Sentence()
 	}
-	if len(s) > int(maxSize) {
+  
+	if len(s) < int(maxSize) {
+		extraData := make([]byte, int(maxSize)-len(s))
+		rand.Read(extraData)
+		return append([]byte(s), extraData...)
+	} else {
 		s = s[:int(maxSize)]
+		return s
 	}
-	return s
 }
 
 func (r *RandomBinary) String() string {
