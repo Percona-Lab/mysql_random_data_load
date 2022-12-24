@@ -21,7 +21,7 @@ $(error Invalid GOPATH. There is no src dir in the GOPATH)
 endif
 
 ifeq ($(findstring ${GOPATH},${CUR_DIR}), )
-$(error Wrong directorry for the project. It must be in $GOPATH/github/Percona-Lab/mysql_random_data_load)
+$(error Wrong directorry for the project. It must be in $GOPATH/github/furusax0621/mysql_random_data_load)
 endif
 
 $(info )

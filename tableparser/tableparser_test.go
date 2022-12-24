@@ -4,7 +4,7 @@ import (
 	"testing"
 	"time"
 
-	tu "github.com/Percona-Lab/mysql_random_data_load/testutils"
+	tu "github.com/furusax0621/mysql_random_data_load/testutils"
 	_ "github.com/go-sql-driver/mysql"
 	version "github.com/hashicorp/go-version"
 	log "github.com/sirupsen/logrus"

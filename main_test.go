@@ -7,9 +7,9 @@ import (
 	"testing"
 	"time"
 
-	"github.com/Percona-Lab/mysql_random_data_load/internal/getters"
-	"github.com/Percona-Lab/mysql_random_data_load/tableparser"
-	tu "github.com/Percona-Lab/mysql_random_data_load/testutils"
+	"github.com/furusax0621/mysql_random_data_load/internal/getters"
+	"github.com/furusax0621/mysql_random_data_load/tableparser"
+	tu "github.com/furusax0621/mysql_random_data_load/testutils"
 )
 
 func TestGetSamples(t *testing.T) {
